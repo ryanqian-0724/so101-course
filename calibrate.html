@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Calibrate · SO-101 from zero</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body data-page="calibrate">
+<main><div class="col">
+
+<p class="kicker">Chapter 7 · Hands-on</p>
+<h1>Calibrate</h1>
+<p class="lede">The arms are built, but the computer does not yet know what "straight" or "fully bent" means for your particular arms. Calibration teaches it.</p>
+<div class="meta"><span>15 minutes</span><span>You need: both arms clamped, powered and connected by USB</span></div>
+
+<h2>The problem calibration solves</h2>
+<p>Each servo's encoder reports its angle as a raw number from 0 to 4095. But where "0" lies depends on how the horn happened to be pushed onto the shaft during assembly. Two arms built by two people, placed in exactly the same pose, will report different raw numbers.</p>
+<p>That is a disaster for teleoperation: the leader reads "2300" at its elbow, sends "2300" to the follower, and the follower's elbow, whose numbers are shifted, goes somewhere else.</p>
+
+<div class="widget" data-widget="arm" data-mode="calibrate">
+<div class="wtitle"><span>Try it: one command, two arms</span><span>simulation</span></div>
+<p class="caption">Both arms receive the same command. Uncalibrated, each lands in a different wrong pose, because each motor's "middle" is shifted by a different amount. Switch to "Calibrated": the software now subtracts each motor's own shift, and both arms match the dashed target.</p>
+</div>
+
+<p>Calibration records two things for every motor and saves them in a small file:</p>
+<ul>
+<li><strong>The middle:</strong> the raw number the motor reports when the joint is in the centre of its travel.</li>
+<li><strong>The range:</strong> the smallest and largest raw numbers the joint can physically reach.</li>
+</ul>
+<p>From then on, LeRobot translates raw numbers into a shared, meaningful scale. "Elbow at 40" means the same physical bend on the leader, the follower, and anybody else's SO-101.</p>
+
+<div class="box why"><span class="tag">Why it matters beyond teleoperation</span>
+<p>The official docs put it this way: calibration "allows a neural network trained on one robot to work on another". A policy only ever sees numbers. If the numbers mean different poses on different days or different arms, nothing it learned is valid. Calibration is what makes the numbers trustworthy.</p></div>
+
+<div class="box analogy"><span class="tag">Analogy</span>
+<p>Two kitchen scales that both show "37 g" when empty will disagree with every recipe. Pressing the "zero" button on each fixes it. Calibration is pressing "zero" on twelve motors, and also telling each how far it can go.</p></div>
+
+<h2>Calibrate the follower</h2>
+<ol class="steps">
+<li><div>
+<h3>Power and connect</h3>
+<p>Plug in the <span class="follower">follower's</span> power supply and USB cable. If you are unsure of the port, run <code>lerobot-find-port</code> again (<a href="motors.html">chapter 5</a>).</p>
+</div></li>
+<li><div>
+<h3>Start calibration</h3>
+<div class="tabs" data-group="os">
+<section data-label="Windows"><pre><code>lerobot-calibrate --robot.type=so101_follower --robot.port=COM5 --robot.id=my_follower_arm</code></pre></section>
+<section data-label="macOS / Linux"><pre><code>lerobot-calibrate \
+    --robot.type=so101_follower \
+    --robot.port=/dev/ttyACM0 \
+    --robot.id=my_follower_arm</code></pre>
+<p class="small">On a Mac the port looks like <code>/dev/tty.usbmodem575E0032081</code>.</p></section>
+</div>
+<div class="dissect"><div class="line">
+<span class="part" data-info="The calibration program.">lerobot-calibrate</span>
+<span class="part" data-info="Which robot design: the SO-101 follower.">--robot.type=so101_follower</span>
+<span class="part" data-info="The follower's port, from lerobot-find-port.">--robot.port=…</span>
+<span class="part" data-info="A name you choose for THIS arm. The calibration is saved in a file with this name. Every later command must use exactly the same id, because that is how LeRobot finds the file again. Change the id and LeRobot thinks it is a new, uncalibrated arm.">--robot.id=my_follower_arm</span>
+</div></div>
+</div></li>
+<li><div>
+<h3>Hold the arm in the middle pose, press Enter</h3>
+<p>The program asks you to move every joint to the middle of its range. Hold the arm so that:</p>
+<ul>
+<li>it points straight forward (pan centred),</li>
+<li>the upper arm, forearm and hand are each roughly halfway between their two extremes,</li>
+<li>the gripper is half open.</li>
+</ul>
+<p>The program prints a sketch of the pose, and the <a href="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/lerobot/calibrate_so101_2.mp4">official calibration video</a> shows it. It does not need to be exact. Press <kbd>Enter</kbd> while holding it.</p>
+</div></li>
+<li><div>
+<h3>Move every joint through its full range</h3>
+<p>A live table appears with a row per joint and columns <code>MIN</code>, <code>POS</code>, <code>MAX</code>. Now, one joint at a time, move it slowly all the way to one end stop and all the way to the other. Watch <code>MIN</code> and <code>MAX</code> spread apart as you go.</p>
+<pre class="out">NAME            |    MIN |    POS |    MAX
+shoulder_pan    |    758 |   2046 |   3301
+shoulder_lift   |    812 |   2051 |   3190
+elbow_flex      |    901 |   2040 |   3077
+…</pre>
+<p class="small">Your numbers will differ. <code>wrist_roll</code> can turn all the way round, so the program handles it automatically; do not worry if its row does not react.</p>
+<p>When every joint has been to both ends, press <kbd>Enter</kbd>.</p>
+</div></li>
+<li><div>
+<h3>Read where the file was saved</h3>
+<pre class="out">Calibration saved to …/calibration/robots/…/my_follower_arm.json</pre>
+<p>That file is the result. It lives in a hidden folder in your user directory, and the same values are also written into the motors.</p>
+<p><strong>Now unplug the arm's power for five seconds and plug it back in.</strong> Builders have reported that, without this restart, a joint can occasionally swing hard to its end stop the first time the motors switch on after calibration.</p>
+</div></li>
+</ol>
+
+<h2>Calibrate the leader</h2>
+<p>Same procedure with the <span class="leader">leader</span>. Because it is a teleoperator, the option names start with <code>--teleop</code>:</p>
+<div class="tabs" data-group="os">
+<section data-label="Windows"><pre><code>lerobot-calibrate --teleop.type=so101_leader --teleop.port=COM6 --teleop.id=my_leader_arm</code></pre></section>
+<section data-label="macOS / Linux"><pre><code>lerobot-calibrate \
+    --teleop.type=so101_leader \
+    --teleop.port=/dev/ttyACM1 \
+    --teleop.id=my_leader_arm</code></pre></section>
+</div>
+
+<div class="box warn"><span class="tag">Write these four things down</span>
+<p>You will type them in every command for the rest of the course: the follower's port, the leader's port, <code>my_follower_arm</code> and <code>my_leader_arm</code>. Ports can change after a restart; the ids must never change.</p></div>
+
+<h2>If something goes wrong</h2>
+<div class="tablewrap"><table>
+<tr><th>What you see</th><th>Cause</th><th>Fix</th></tr>
+<tr><td><code>Failed to sync read 'Present_Position' on ids=[1,2,3,4,5,6] … There is no status packet!</code></td><td>The computer hears nothing from the motors</td><td>Is the power supply on? Is a 3-wire cable loose? A servo whose light is off marks the spot: the cable just before it is loose</td></tr>
+<tr><td><code>Could not connect on port …</code></td><td>Wrong port, or (Linux) no permission</td><td>Run <code>lerobot-find-port</code>; on Linux <code>sudo chmod 666 /dev/ttyACM*</code></td></tr>
+<tr><td><code>Magnitude … exceeds 2047</code></td><td>A motor's stored offset is out of range</td><td>Unplug the arm's power, plug it back in, and calibrate again</td></tr>
+<tr><td>You made a mistake during the range sweep</td><td></td><td>Run the command again. When asked, type <code>c</code> and press Enter to redo the calibration and overwrite the file</td></tr>
+</table></div>
+
+<div class="box idea"><span class="tag">When to recalibrate</span>
+<p>Only when the hardware changes: you replaced a motor, took a horn off and put it back, or rebuilt a joint. Otherwise the saved file is reused automatically.</p></div>
+
+<div class="quiz">
+<p class="q">Yesterday you calibrated with <code>--robot.id=my_follower_arm</code>. Today you type <code>--robot.id=follower</code> by mistake. What happens?</p>
+<div class="opts">
+<button data-fb="The id is the file name of the calibration. A different id means a different (missing) file.">Nothing changes; the id is just decoration.</button>
+<button data-ok data-fb="LeRobot looks for a calibration file named 'follower', finds none, and asks you to calibrate again as if this were a new arm.">LeRobot cannot find the calibration and asks you to calibrate again.</button>
+<button data-fb="The motor IDs (1 to 6) are stored inside the motors and are unrelated to this name.">The motor IDs get erased.</button>
+</div></div>
+
+<div class="quiz">
+<p class="q">Why do two correctly built arms report different raw encoder numbers in the same pose?</p>
+<div class="opts">
+<button data-fb="The encoders are fine. The difference comes from assembly, not from faults.">One of the encoders must be broken.</button>
+<button data-ok data-fb="The encoder measures the shaft, and the horn can be pushed onto the shaft at any rotation. So the same joint angle corresponds to different shaft readings on different arms.">The horn sits on each motor shaft at a slightly different rotation.</button>
+<button data-fb="Voltage affects strength, not what the position sensor reads.">The power supplies have different voltages.</button>
+</div></div>
+
+</div></main>
+<script src="assets/glossary.js"></script>
+<script src="assets/site.js"></script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>

@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Train your first policy · SO-101 from zero</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body data-page="train">
+<main><div class="col">
+
+<p class="kicker">Chapter 12 · Hands-on</p>
+<h1>Train your first policy</h1>
+<p class="lede">One command turns your 50 demonstrations into an ACT policy. Your job is to choose where it runs, start it, and read what it tells you.</p>
+<div class="meta"><span>10 minutes of your time, 30 minutes to several hours of the computer's</span><span>You need: your dataset on the Hub</span></div>
+
+<h2>What happens during training</h2>
+<p>Everything from <a href="learning.html">chapter 9</a>, at scale. The program:</p>
+<ol>
+<li>Downloads your dataset and creates an ACT network with about 80 million random parameters.</li>
+<li>Picks a <dfn data-g="batch">batch</dfn> of 8 random moments from your episodes. For each: the camera pictures and joint values at that moment, and the chunk of actions you performed next.</li>
+<li>Asks the network to predict those action chunks, and measures the gap between prediction and what you really did. That gap is the <dfn data-g="loss">loss</dfn>.</li>
+<li>Nudges all 80 million parameters to shrink the loss slightly.</li>
+<li>Repeats steps 2–4 tens of thousands of times, saving a <dfn data-g="checkpoint">checkpoint</dfn> every so often.</li>
+</ol>
+<p>The robot is not involved and can be switched off. Training only needs the data.</p>
+
+<h2>Choose where to train</h2>
+<p>In <a href="setup.html">chapter 4</a> you checked for a GPU. That decides your route. The time estimates are from LeRobot's hardware guide for about 50 episodes, and the guide itself says they can be off by half in either direction.</p>
+<div class="tablewrap"><table>
+<tr><th>Your computer</th><th>Route</th><th>Rough time for ACT</th></tr>
+<tr><td>NVIDIA GPU with 6 GB memory or more</td><td>A: train locally</td><td>30–60 min on a top card (RTX 4090/3090); a few hours on a laptop card</td></tr>
+<tr><td>Apple Silicon Mac</td><td>A: train locally with <code>mps</code>, or B for speed</td><td>6–14 hours on a high-end Mac; leave it overnight</td></tr>
+<tr><td>No GPU</td><td>B: train in the cloud</td><td>1–2 hours on a rented mid-range GPU</td></tr>
+</table></div>
+<div class="box warn"><span class="tag">Do not train on a plain processor</span><p>The official guidance for a computer without a GPU is two words: "Don't train." It would take days. Use route B.</p></div>
+
+<div class="tabs">
+<section data-label="Route A: on your own computer">
+<ol class="steps">
+<li><div>
+<h3>Run the training command</h3>
+<p>Activate the environment, then run this with your username. Change <code>cuda</code> to <code>mps</code> on a Mac.</p>
+<div class="tabs" data-group="os">
+<section data-label="Windows"><pre><code>lerobot-train --dataset.repo_id=YOUR_NAME/so101_pick_place --policy.type=act --output_dir=outputs/train/act_so101_pick_place --job_name=act_so101_pick_place --policy.device=cuda --policy.repo_id=YOUR_NAME/act_so101_pick_place --steps=30000 --trackio.enable=true</code></pre></section>
+<section data-label="macOS / Linux"><pre><code>lerobot-train \
+  --dataset.repo_id=YOUR_NAME/so101_pick_place \
+  --policy.type=act \
+  --output_dir=outputs/train/act_so101_pick_place \
+  --job_name=act_so101_pick_place \
+  --policy.device=cuda \
+  --policy.repo_id=YOUR_NAME/act_so101_pick_place \
+  --steps=30000 \
+  --trackio.enable=true</code></pre></section>
+</div>
+<div class="dissect"><div class="line">
+<span class="part" data-info="The training program.">lerobot-train</span>
+<span class="part" data-info="Which dataset to learn from: the exact name you recorded under. If you did not use no_stamp, this must include the date-and-time ending.">--dataset.repo_id=…</span>
+<span class="part" data-info="Which kind of policy to create: ACT, built fresh with random parameters. It automatically adapts to your number of joints and cameras.">--policy.type=act</span>
+<span class="part" data-info="A folder on this computer where checkpoints and logs are saved. If the folder already exists from an earlier run, choose a new name.">--output_dir=…</span>
+<span class="part" data-info="A label for this run, shown in logs and charts.">--job_name=…</span>
+<span class="part" data-info="Which processor does the maths. cuda = NVIDIA graphics card. mps = Apple Silicon GPU. cpu = the main processor (far too slow for training).">--policy.device=cuda</span>
+<span class="part" data-info="Where to upload the finished policy on the Hub, so you can load it by name later and from any computer.">--policy.repo_id=…</span>
+<span class="part" data-info="How many training steps to run. The default is 100,000, which the docs say is usually more than a small dataset needs. 30,000 steps at batch size 8 is about 5 passes over a 45,000-frame dataset, the lower end of the recommended 5 to 10 epochs.">--steps=30000</span>
+<span class="part" data-info="Optional. Records the loss and other numbers so you can view them as charts. Open the charts with: trackio show --project lerobot">--trackio.enable=true</span>
+</div></div>
+</div></li>
+<li><div>
+<h3>Confirm it is using the GPU</h3>
+<p>In the first lines of output, look for a warning like this:</p>
+<pre class="out">WARNING: Device 'cuda' is not available. Switching to 'cpu'.</pre>
+<p>If you see it, stop with <kbd>Ctrl</kbd>+<kbd>C</kbd>. Your PyTorch has no GPU support; go back to step 4 of <a href="setup.html">chapter 4</a>.</p>
+</div></li>
+<li><div>
+<h3>Let it run</h3>
+<p>Keep the computer awake and plugged in. If training is interrupted, you can continue from the last checkpoint:</p>
+<pre><code>lerobot-train --config_path=outputs/train/act_so101_pick_place/checkpoints/last/pretrained_model/train_config.json --resume=true</code></pre>
+</div></li>
+</ol>
+</section>
+<section data-label="Route B: in the cloud">
+<p>Your dataset is already on the Hub, so any computer on the internet can train on it. Two options:</p>
+<h3>Option 1: Google Colab</h3>
+<p>Colab gives you a temporary computer with a GPU inside a web page. Hugging Face publishes a ready-made notebook for ACT.</p>
+<ol>
+<li>Open the <a href="https://colab.research.google.com/github/huggingface/notebooks/blob/main/lerobot/training-act.ipynb">official ACT training notebook</a> and sign in with a Google account.</li>
+<li>In the menu choose Runtime → Change runtime type and select a GPU.</li>
+<li>Run the cells from the top with the play buttons. They install LeRobot and ask you to log in to Hugging Face with your token.</li>
+<li>In the training cell, replace the example dataset and policy names with yours (<code>YOUR_NAME/so101_pick_place</code> and <code>YOUR_NAME/act_so101_pick_place</code>).</li>
+<li>Keep the browser tab open until it finishes. The policy is uploaded to your Hub account at the end.</li>
+</ol>
+<div class="box warn"><span class="tag">Two things to know</span>
+<p>When this course was written, the notebook's training cell still contained the option <code>--wandb.enable=False</code>, which belongs to an older LeRobot version. If the cell fails complaining about it, delete that line and run the cell again.</p>
+<p>The free tier offers a modest GPU and may disconnect long sessions. The notebook's quoted times assume a much faster paid GPU, and we could not find a verified time for the free one. If a session dies, lower <code>--steps</code> to 20000 and try again.</p></div>
+<h3>Option 2: Hugging Face Jobs</h3>
+<p>LeRobot can send the training to Hugging Face's own computers by adding one option. You run this from your own terminal, and it needs a payment method on your Hugging Face account because GPU time is billed by the second. Ask your teacher before using it.</p>
+<pre><code>lerobot-train --dataset.repo_id=YOUR_NAME/so101_pick_place --policy.type=act --policy.repo_id=YOUR_NAME/act_so101_pick_place --steps=30000 --job.target=a10g-small</code></pre>
+<p class="small"><code>--job.target</code> names the rented machine. <code>hf jobs hardware</code> lists the choices and prices; <code>hf jobs logs &lt;job-id&gt;</code> shows progress.</p>
+</section>
+</div>
+
+<h2>Reading the training log</h2>
+<p>Every 200 steps a line like this appears:</p>
+<pre class="out">step:2K smpl:16K ep:18 epch:0.36 loss:0.412 grdn:21.3 lr:1.0e-05 updt_s:0.19 data_s:0.01</pre>
+<div class="dissect"><div class="line">
+<span class="part" data-info="Training steps done so far. K means thousand. One step = one batch = one nudge of all the parameters.">step:2K</span>
+<span class="part" data-info="Samples seen: steps × batch size. 2,000 steps × 8 = 16,000 moments from your episodes.">smpl:16K</span>
+<span class="part" data-info="The same amount expressed as a number of episodes.">ep:18</span>
+<span class="part" data-info="Epochs: how many times the whole dataset has been seen. 0.36 means just over a third of the way through the first pass.">epch:0.36</span>
+<span class="part" data-info="How wrong the predictions currently are, averaged over recent steps. This is the number to watch. It should fall quickly at first, then slowly.">loss:0.412</span>
+<span class="part" data-info="Gradient norm: how big the current nudge is. Mostly for experts; ignore it unless it becomes huge or 'nan'.">grdn:21.3</span>
+<span class="part" data-info="Learning rate, the step size from chapter 9. 1.0e-05 means 0.00001.">lr:1.0e-05</span>
+<span class="part" data-info="Seconds spent on the actual parameter update per step. Multiply by the remaining steps to estimate the remaining time.">updt_s:0.19</span>
+<span class="part" data-info="Seconds spent waiting for data to be loaded per step. If this is much larger than updt_s, the GPU is sitting idle waiting for the disk or video decoding.">data_s:0.01</span>
+</div></div>
+<p class="small">The numbers in this example are illustrative. Yours will differ.</p>
+
+<div class="tablewrap"><table>
+<tr><th>What you see</th><th>Meaning</th><th>What to do</th></tr>
+<tr><td>Loss falls fast, then flattens</td><td>Normal, healthy training</td><td>Nothing</td></tr>
+<tr><td>Loss barely moves from the start</td><td>The model is not learning</td><td>Check the dataset name and that episodes actually contain movement</td></tr>
+<tr><td>Loss is <code>nan</code></td><td>The maths blew up</td><td>Stop; check the dataset in the viewer for corrupted episodes</td></tr>
+<tr><td><code>CUDA out of memory</code></td><td>The batch does not fit in your GPU's memory</td><td>Add <code>--batch_size=4</code> (and double <code>--steps</code> to see the same amount of data)</td></tr>
+</table></div>
+
+<div class="box why"><span class="tag">The loss cannot tell you if the robot will succeed</span>
+<p>This is <a href="learning.html">chapter 9's</a> warning in practice. The loss measures how well the network reproduces <em>your recorded actions on your recorded images</em>. A low loss means it fits the demonstrations. It cannot reveal that the camera has since moved, that the demos never covered the left side of the table, or that small errors will snowball. Only running the robot answers that. Treat the loss as "training did not break", not as a grade.</p></div>
+
+<h2>Where the result is</h2>
+<ul>
+<li><strong>On the training computer:</strong> <code>outputs/train/act_so101_pick_place/checkpoints/</code> holds numbered folders (for example <code>020000</code>) and <code>last</code>. Inside each, the <code>pretrained_model</code> folder is the policy.</li>
+<li><strong>On the Hub:</strong> at <code>huggingface.co/YOUR_NAME/act_so101_pick_place</code>, uploaded automatically when training finishes.</li>
+</ul>
+<p>A checkpoint is nothing more than a file with 80 million numbers plus a description of the network's shape. Those numbers are your policy.</p>
+
+<div class="quiz">
+<p class="q">You have 60 episodes of about 20 seconds each at 30 frames per second, and batch size 8. Roughly how many steps give 5 epochs?</p>
+<div class="opts">
+<button data-fb="That is one epoch: 36,000 frames ÷ 8 = 4,500 steps.">About 4,500</button>
+<button data-ok data-fb="60 × 20 × 30 = 36,000 frames. One epoch = 36,000 ÷ 8 = 4,500 steps. Five epochs = 22,500 steps.">About 22,500</button>
+<button data-fb="That is the default, and far more than this dataset needs.">100,000</button>
+</div></div>
+
+<div class="quiz">
+<p class="q">Training finished with a very low loss. What is the correct next thought?</p>
+<div class="opts">
+<button data-fb="Low loss shows the model fits the demonstrations. Real-world success is a separate question.">"The policy works."</button>
+<button data-ok data-fb="Exactly. The loss only checks agreement with recorded data. The real test is on the robot.">"Training ran properly. Now I need to test it on the robot to see if it works."</button>
+<button data-fb="A low loss is the expected outcome, not a sign of a fault.">"Something went wrong; loss should be high."</button>
+</div></div>
+
+</div></main>
+<script src="assets/glossary.js"></script>
+<script src="assets/site.js"></script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>

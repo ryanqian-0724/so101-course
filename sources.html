@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sources and links · SO-101 from zero</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body data-page="sources">
+<main><div class="col">
+
+<p class="kicker">Reference</p>
+<h1>Sources and links</h1>
+<p class="lede">Where the facts in this course come from, and where to keep learning.</p>
+
+<h2>How this course was researched</h2>
+<p>Every command and number was taken from the sources below as they stood on <strong>16–17 November 2026</strong>, when the current LeRobot release was <strong>0.7.0</strong>. LeRobot changes quickly, so if a command here stops working, the official page for that step is the first place to look.</p>
+
+<div class="box warn"><span class="tag">What we could not verify</span>
+<p>Honesty about the limits of this course:</p>
+<ul>
+<li><strong>Nothing here was tested on a physical SO-101.</strong> The commands are copied from official documentation; the Windows versions are our adaptation of them (one line, <code>COM</code> ports), because the official docs only show macOS and Linux.</li>
+<li><strong>The Windows NVIDIA install step</strong> (chapter 4, step 4) is based on what PyTorch's download server offers, not on an official LeRobot instruction.</li>
+<li><strong>Assembly times and typical success rates</strong> come from individual builders' reports, not from official figures.</li>
+<li><strong>Training time on free Google Colab</strong> is unknown; official estimates assume faster paid GPUs.</li>
+<li><strong>The exact appearance of program output</strong> (the grey "what you should see" boxes) is reconstructed from documentation and source code, and may differ in detail.</li>
+<li><strong>The interactive demos are simplified simulations</strong> built to show one idea each. Their numbers are illustrative, not measurements of a real arm or a real policy.</li>
+</ul></div>
+
+<h2>Official documentation</h2>
+<ul>
+<li><a href="https://huggingface.co/docs/lerobot/installation">LeRobot: Installation</a> — chapter 4</li>
+<li><a href="https://huggingface.co/docs/lerobot/so101">LeRobot: SO-101</a> (motor setup, assembly videos, calibration) — chapters 5–7</li>
+<li><a href="https://huggingface.co/docs/lerobot/il_robots">LeRobot: Imitation Learning on Real-World Robots</a> (teleoperate, record, train, rollout) — chapters 8, 11–13</li>
+<li><a href="https://huggingface.co/docs/lerobot/cameras">LeRobot: Cameras</a> — chapter 8</li>
+<li><a href="https://huggingface.co/docs/lerobot/hardware_guide">LeRobot: Compute hardware guide</a> (training times, GPU memory) — chapter 12</li>
+<li><a href="https://huggingface.co/docs/lerobot/cheat-sheet">LeRobot: Cheat sheet</a> (all commands on one page)</li>
+<li><a href="https://huggingface.co/docs/lerobot/act">LeRobot: ACT</a> and <a href="https://huggingface.co/docs/lerobot/smolvla">SmolVLA</a></li>
+<li><a href="https://huggingface.co/docs/lerobot/notebooks">LeRobot: Colab notebooks</a></li>
+<li><a href="https://huggingface.co/docs/lerobot/lerobot-dataset-v3">LeRobot: Dataset format v3.0</a></li>
+<li><a href="https://github.com/huggingface/lerobot">LeRobot source code on GitHub</a> and its <a href="https://github.com/huggingface/lerobot/releases">release notes</a></li>
+<li><a href="https://github.com/TheRobotStudio/SO-ARM100">TheRobotStudio SO-ARM100 / SO-101 repository</a> (parts list, 3D printing) — chapter 3</li>
+<li><a href="https://github.com/conda-forge/miniforge">Miniforge</a> — chapter 4</li>
+</ul>
+
+<h2>Vendor guides</h2>
+<ul>
+<li><a href="https://wiki.seeedstudio.com/lerobot_so100m_new/">Seeed Studio SO-ARM100/101 wiki</a> (kit editions, power-supply warnings, a long FAQ). Note that it recommends Seeed's own copy of LeRobot, which can lag behind the official one.</li>
+<li><a href="https://www.waveshare.com/wiki/Bus_Servo_Adapter_(A)">Waveshare Bus Servo Adapter</a> (the control board and its jumpers)</li>
+</ul>
+
+<h2>Research papers behind the ideas</h2>
+<ul>
+<li><a href="https://arxiv.org/abs/2304.13705">ACT</a>: Zhao, Kumar, Levine, Finn, "Learning Fine-Grained Bimanual Manipulation with Low-Cost Hardware", 2023 — chapter 10</li>
+<li><a href="https://arxiv.org/abs/2303.04137">Diffusion Policy</a>: Chi et al., 2023 — chapter 14</li>
+<li><a href="https://arxiv.org/abs/2506.01844">SmolVLA</a>: Hugging Face, 2025 — chapters 13–14</li>
+<li><a href="https://arxiv.org/abs/2410.24164">π0</a>: Physical Intelligence, 2024 — chapter 14</li>
+<li><a href="https://arxiv.org/abs/2307.15818">RT-2</a> and <a href="https://arxiv.org/abs/2406.09246">OpenVLA</a> — chapter 14</li>
+<li><a href="https://worldmodels.github.io/">World Models</a>: Ha and Schmidhuber, 2018; <a href="https://arxiv.org/abs/2301.04104">DreamerV3</a>; <a href="https://arxiv.org/abs/2506.09985">V-JEPA 2</a> — chapter 14</li>
+<li><a href="https://arxiv.org/abs/2410.21845">HIL-SERL</a>: Luo et al., 2024 — chapter 14</li>
+<li><a href="https://arxiv.org/abs/2310.08864">Open X-Embodiment</a>, 2023 — chapter 14</li>
+<li><a href="https://arxiv.org/abs/2510.12403">Robot Learning: A Tutorial</a>: the LeRobot team, 2025 — background for all idea chapters</li>
+</ul>
+
+<h2>Keep learning</h2>
+<div class="cards">
+<div><h3>Courses</h3><p class="small"><a href="https://huggingface.co/learn/robotics-course">Hugging Face Robotics Course</a> (free, uses LeRobot)<br><a href="https://huggingface.co/spaces/lerobot/robot-learning-tutorial">Robot Learning tutorial</a> (interactive)</p></div>
+<div><h3>Other people's builds</h3><p class="small"><a href="https://huggingface.co/blog/sherryxychen/train-act-on-so-101">"How I Trained ACT on SO-101: Gotchas and Lessons"</a><br><a href="https://dev.classmethod.jp/en/articles/lerobot-so-arm101-assembly-teleop/">Assembly and teleoperation build log</a><br><a href="https://dev.classmethod.jp/en/articles/lerobot-so-arm101-act-training-eval/">ACT training and evaluation log</a></p></div>
+<div><h3>Tools</h3><p class="small"><a href="https://huggingface.co/spaces/lerobot/visualize_dataset">Dataset viewer</a><br><a href="https://huggingface.co/datasets?other=LeRobot">LeRobot datasets on the Hub</a><br><a href="https://huggingface.co/docs/lerobot/lelab">LeLab</a>, a graphical app for the SO-101 that avoids the terminal</p></div>
+<div><h3>Community</h3><p class="small"><a href="https://discord.com/invite/s3KuuzsPFb">LeRobot Discord</a><br><a href="https://github.com/huggingface/lerobot/issues">GitHub issues</a><br><a href="https://huggingface.co/blog/lerobot-datasets">Blog: what makes a good dataset</a></p></div>
+</div>
+
+</div></main>
+<script src="assets/glossary.js"></script>
+<script src="assets/site.js"></script>
+</body>
+</html>

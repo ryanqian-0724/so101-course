@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SO-101 from zero</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body data-page="home">
+<main><div class="col">
+
+<p class="kicker">A step-by-step course for the LeRobot SO-ARM101 kit</p>
+<h1>Build a robot arm and teach it a task</h1>
+<p class="lede">You start with a box of parts and no experience. You finish with a robot that picks up an object by itself, and you will understand why it works, why it sometimes fails, and what the words policy, ACT, VLA and world model really mean.</p>
+
+<div class="widget" data-widget="arm" data-mode="teleop">
+<div class="wtitle"><span>This is the heart of the kit</span><span>simulation</span></div>
+<p class="caption">You hold the <span class="leader">leader</span> arm; the <span class="follower">follower</span> copies you. Record yourself doing a task this way about fifty times, and a neural network can learn to move the follower without you. Move the sliders to try it.</p>
+</div>
+
+<h2>How the course works</h2>
+<div class="cards">
+<div><h3>Hands-on chapters</h3><p class="small">Exact steps and commands for Windows, macOS and Linux. Click any part of a command to see what it does.</p></div>
+<div><h3>Ideas chapters</h3><p class="small">The concepts behind what you just did, with demos you can play with and questions to check yourself.</p></div>
+<div><h3>Always the why</h3><p class="small">Green boxes explain the reason for each step. Dashed-underlined words show a definition when you point at them.</p></div>
+</div>
+<p>Tick "I have finished this chapter" at the bottom of each page and the bar at the top tracks your progress. Progress is saved in this browser only.</p>
+
+<h2>The chapters</h2>
+<ol class="roadmap" id="roadmap"></ol>
+
+<h2>What you need</h2>
+<ul>
+<li>An SO-101 kit: two arms (leader and follower) with motors, control boards, power supplies and cables. <a href="kit.html">Chapter 3</a> helps you identify your version.</li>
+<li>A computer running Windows, macOS (Apple Silicon) or Linux, with about 10 GB of free space.</li>
+<li>At least one USB camera. A second one helps.</li>
+<li>A small screwdriver set, a table edge to clamp to, and a small object and box for the task.</li>
+<li>A graphics card is <em>not</em> required. Without one, the training step runs in the cloud.</li>
+<li>Time: roughly 10–15 hours in total, spread over several sessions.</li>
+</ul>
+
+<div class="box warn"><span class="tag">Before you plug anything in</span>
+<p>Read <a href="kit.html">chapter 3</a> first. Some kits contain a 12V and a 5V power supply, and connecting the 12V one to the wrong arm can destroy its motors.</p></div>
+
+<p class="small">Written for LeRobot 0.7.0 (November 2026). All commands come from the official documentation; see <a href="sources.html">sources</a> for references and for what could not be verified.</p>
+<p><a class="btn" href="big-picture.html">Start with chapter 1 →</a></p>
+
+</div></main>
+<script src="assets/glossary.js"></script>
+<script src="assets/site.js"></script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>

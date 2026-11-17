@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Set up your computer · SO-101 from zero</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body data-page="setup">
+<main><div class="col">
+
+<p class="kicker">Chapter 4 · Hands-on</p>
+<h1>Set up your computer</h1>
+<p class="lede">You will install the LeRobot software and everything it depends on. Nothing here needs the robot, so you can do it before the kit is even open.</p>
+<div class="meta"><span>30–60 minutes, mostly downloads</span><span>You need: a computer, internet, about 10 GB of free disk space</span></div>
+
+<p>Pick your system once here. Every page remembers your choice.</p>
+<div class="tabs" data-group="os">
+<section data-label="Windows"><p>Windows 10 or 11. We use Windows directly (not "WSL"), because connecting USB devices to WSL takes extra administrator steps that are not worth it for beginners.</p></section>
+<section data-label="macOS"><p>A Mac with an Apple Silicon chip (M1 or newer) and macOS 14 or newer; macOS 15 or newer if you want to use the Mac's GPU for training. Older Intel Macs are not supported by the current versions of the software LeRobot depends on.</p></section>
+<section data-label="Linux"><p>Ubuntu or a similar distribution. This is the system LeRobot's own documentation is written for.</p></section>
+</div>
+
+<h2>First, four ideas</h2>
+<h3>The terminal</h3>
+<p>A <dfn data-g="terminal">terminal</dfn> is a window where you type commands as text and the computer answers in text. It looks old-fashioned, but it is how almost all robotics and AI software is run, because a typed command can say exactly what you want in one line. You type a command, press <kbd>Enter</kbd>, and wait for the prompt to come back.</p>
+<h3>Python and packages</h3>
+<p>LeRobot is written in <strong>Python</strong>, a programming language. You will not write Python in this course, but you need Python installed to run it. Python programs are built from <strong>packages</strong>: bundles of code that others have written. LeRobot itself is a package, and it relies on dozens of others (for example PyTorch, which does the neural-network maths).</p>
+<h3>Environments</h3>
+<p>Different projects need different versions of packages, and they can clash. An <dfn data-g="environment">environment</dfn> is a private folder with its own Python and its own packages, separate from everything else on the computer.</p>
+<div class="box analogy"><span class="tag">Analogy</span><p>An environment is like a separate pencil case for each school subject. What you put in the art case does not mess up the maths case. If the art case becomes a disaster, you throw it away and make a new one, and maths is untouched.</p></div>
+<p>The tool that creates environments is called <strong>conda</strong>. We install it through a free distribution named Miniforge, which is what the LeRobot docs recommend.</p>
+<h3>The Hugging Face Hub</h3>
+<p>The <dfn data-g="hub">Hub</dfn> is a website for sharing datasets and AI models, a bit like a cloud drive made for machine learning. LeRobot uploads your recordings there, and training (on your computer or in the cloud) downloads them from there.</p>
+
+<h2>Install everything</h2>
+<ol class="steps">
+
+<li><div>
+<h3>Install Miniforge</h3>
+<div class="tabs" data-group="os">
+<section data-label="Windows">
+<p>Go to <a href="https://github.com/conda-forge/miniforge">github.com/conda-forge/miniforge</a>, download <code>Miniforge3-Windows-x86_64.exe</code> and run it. Accept the default options.</p>
+<p>Then open the Start menu and launch <strong>Miniforge Prompt</strong>. This is your terminal for the whole course. Conda only works in this window, not in the ordinary Command Prompt or PowerShell.</p>
+</section>
+<section data-label="macOS">
+<p>Go to <a href="https://github.com/conda-forge/miniforge">github.com/conda-forge/miniforge</a>, download the macOS installer for Apple Silicon (the <code>.pkg</code> file) and run it.</p>
+<p>Then open the <strong>Terminal</strong> app: press <kbd>Cmd</kbd>+<kbd>Space</kbd>, type <code>Terminal</code>, press <kbd>Enter</kbd>. If it was already open, close and reopen it.</p>
+</section>
+<section data-label="Linux">
+<p>Open a terminal (<kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>T</kbd> on Ubuntu) and run these two lines from the LeRobot docs:</p>
+<pre><code>wget "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"
+bash Miniforge3-$(uname)-$(uname -m).sh</code></pre>
+<p>Answer <code>yes</code> to the questions, then close and reopen the terminal.</p>
+</section>
+</div>
+<p>Check it worked:</p>
+<pre><code>conda --version</code></pre>
+<pre class="out">conda 26.5.3</pre>
+<p class="small">Your version number will differ. Any number means success. "Command not found" means the terminal has not picked up conda yet: close and reopen it (on Windows, make sure you are in Miniforge Prompt).</p>
+</div></li>
+
+<li><div>
+<h3>Create the environment</h3>
+<pre><code>conda create -y -n lerobot python=3.12</code></pre>
+<div class="dissect"><div class="line">
+<span class="part" data-info="The environment manager you just installed.">conda</span>
+<span class="part" data-info="Make a new environment.">create</span>
+<span class="part" data-info="Answer 'yes' automatically to the 'proceed?' question.">-y</span>
+<span class="part" data-info="-n means 'name'. The environment will be called lerobot. You could choose another name, but then use it everywhere.">-n lerobot</span>
+<span class="part" data-info="Put Python version 3.12 inside. LeRobot requires 3.12 or newer, and 3.12 is the version every supporting package is available for on every system. Do not pick a newer one.">python=3.12</span>
+</div></div>
+<p>Now step inside it:</p>
+<pre><code>conda activate lerobot</code></pre>
+<p>Your prompt should now start with <code>(lerobot)</code>.</p>
+<div class="box warn"><span class="tag">You will do this every time</span>
+<p>Every time you open a new terminal, type <code>conda activate lerobot</code> first. If a LeRobot command says "command not found" or "is not recognized", the cause is nearly always that <code>(lerobot)</code> is missing from the prompt.</p></div>
+</div></li>
+
+<li><div>
+<h3>Install ffmpeg</h3>
+<pre><code>conda install -y ffmpeg -c conda-forge</code></pre>
+<div class="box why"><span class="tag">Why?</span>
+<p>Your camera will record 30 pictures every second. Stored as separate images, fifty demonstrations would fill many gigabytes. <strong>ffmpeg</strong> is a program that compresses pictures into video files (and unpacks them again for training), making them many times smaller. LeRobot uses it behind the scenes.</p></div>
+</div></li>
+
+<li><div>
+<h3>Windows with an NVIDIA graphics card only: install the GPU version of PyTorch</h3>
+<div class="tabs" data-group="os">
+<section data-label="Windows">
+<p>First find out whether you have an NVIDIA GPU:</p>
+<pre><code>nvidia-smi</code></pre>
+<p>If a table appears naming a card (for example "GeForce RTX 4060"), you have one. If you get "not recognized", you do not: skip this step.</p>
+<p>With an NVIDIA card, run this <strong>before</strong> installing LeRobot:</p>
+<pre><code>pip install --index-url https://download.pytorch.org/whl/cu132 torch torchvision</code></pre>
+<div class="box why"><span class="tag">Why?</span>
+<p>PyTorch comes in two builds: one that can use an NVIDIA graphics card (through NVIDIA's system called CUDA) and one that only uses the main processor. On Windows, the default download is the processor-only build, even if you own a powerful graphics card. This command fetches the GPU build from PyTorch's own server instead.</p>
+<p class="small">The official LeRobot docs do not cover this case, so this command is our best reading of PyTorch's download server, not an official instruction. Step 7 checks whether it worked. If it did not, update your NVIDIA driver and try again.</p></div>
+</section>
+<section data-label="macOS"><p>Nothing to do. On a Mac, the normal install already supports the Apple GPU.</p></section>
+<section data-label="Linux"><p>Nothing to do if your NVIDIA driver is recent (version 580.65 or newer; check with <code>nvidia-smi</code>). The normal install already includes GPU support. With an older driver, update the driver, or see the "CUDA" section of the <a href="https://huggingface.co/docs/lerobot/installation">official installation page</a>.</p></section>
+</div>
+</div></li>
+
+<li><div>
+<h3>Install LeRobot</h3>
+<pre><code>pip install "lerobot[core_scripts,feetech,training]"</code></pre>
+<div class="dissect"><div class="line">
+<span class="part" data-info="Python's package installer. It downloads packages from the Python Package Index (PyPI) into the active environment.">pip install</span>
+<span class="part" data-info="The LeRobot package itself. On its own it installs only the core.">"lerobot</span><span class="part" data-info="Extras are optional add-ons, listed in square brackets. core_scripts adds what is needed to calibrate, teleoperate, record and replay.">[core_scripts,</span><span class="part" data-info="Support for Feetech motors, the brand used in the SO-101. Without this the computer cannot talk to the arm.">feetech,</span><span class="part" data-info="What is needed to train policies. You can leave it out on a computer that will only record data and not train.">training]"</span>
+</div></div>
+<p>This downloads a few gigabytes and takes several minutes. Lines of text will scroll past; that is normal. It is finished when the prompt returns.</p>
+<p class="small">The quotation marks matter: without them some terminals misread the square brackets.</p>
+</div></li>
+
+<li><div>
+<h3>Check the installation</h3>
+<pre><code>lerobot-info</code></pre>
+<p>It prints a report. Look for these lines:</p>
+<pre class="out">- LeRobot version: 0.7.0
+- Python version: 3.12.x
+- FFmpeg version: 8.x
+- PyTorch version: 2.15.0
+- Is PyTorch built with CUDA support?: True      (NVIDIA cards only; False is expected otherwise)</pre>
+<p class="small">Version numbers may be newer than these. This course was written for LeRobot 0.7.0 (November 2026).</p>
+</div></li>
+
+<li><div>
+<h3>Find out where you will train</h3>
+<p>Training needs a <dfn data-g="gpu">GPU</dfn>. Run the check for your system:</p>
+<div class="tabs" data-group="os">
+<section data-label="Windows"><pre><code>python -c "import torch; print(torch.cuda.is_available())"</code></pre></section>
+<section data-label="macOS"><pre><code>python -c "import torch; print(torch.backends.mps.is_available())"</code></pre></section>
+<section data-label="Linux"><pre><code>python -c "import torch; print(torch.cuda.is_available())"</code></pre></section>
+</div>
+<div class="tablewrap"><table>
+<tr><th>Result</th><th>What it means</th><th>Your training plan (chapter 12)</th></tr>
+<tr><td><code>True</code> on Windows or Linux</td><td>NVIDIA GPU is ready</td><td>Train on this computer</td></tr>
+<tr><td><code>True</code> on a Mac</td><td>Apple GPU is ready</td><td>Possible but slow (6–14 hours); the cloud is faster</td></tr>
+<tr><td><code>False</code></td><td>No usable GPU</td><td>Train in the cloud. This computer is still fine for everything else</td></tr>
+</table></div>
+<div class="box why"><span class="tag">Why does training need a GPU?</span>
+<p>Training a neural network means doing the same simple multiplication billions of times. A normal processor (CPU) is like a few very clever workers; a graphics card (GPU) is like thousands of simple workers who can all multiply at once. Graphics cards were built to compute millions of pixels in parallel for games, which happens to be the same kind of work. Recording and teleoperating do not train anything, so they need no GPU.</p></div>
+</div></li>
+
+<li><div>
+<h3>Create a Hugging Face account and log in</h3>
+<p>Go to <a href="https://huggingface.co/join">huggingface.co/join</a> and create a free account. Choose your username carefully: it becomes part of the name of everything you upload. (If you are under the age the site requires, ask your teacher to use a class account.)</p>
+<p>Then create an <strong>access token</strong>, a long password made for programs:</p>
+<ol>
+<li>Open <a href="https://huggingface.co/settings/tokens">huggingface.co/settings/tokens</a> and click "Create new token".</li>
+<li>Choose the token type <strong>Write</strong>, give it a name such as <code>lerobot</code>, and create it.</li>
+<li>Copy the token (it starts with <code>hf_</code>). You will not be able to see it again.</li>
+</ol>
+<p>In your terminal:</p>
+<pre><code>hf auth login</code></pre>
+<p>Paste the token when asked and press <kbd>Enter</kbd>. Nothing appears while you paste; that is a safety feature, not a fault. Then confirm:</p>
+<pre><code>hf auth whoami</code></pre>
+<pre class="out">✓ Logged in
+  user: your-username</pre>
+<div class="box danger"><span class="tag">Treat the token like a password</span>
+<p>Anyone who has your token can upload and delete things as you. Never put it in a chat, a screenshot or a shared document.</p></div>
+<div class="box why"><span class="tag">Why "Write"?</span>
+<p>A read token can only download. LeRobot needs to <em>upload</em> your dataset and your trained policy, so the token must have write permission.</p></div>
+</div></li>
+</ol>
+
+<h2>A note on commands in this course</h2>
+<p>LeRobot's official documentation is written for macOS and Linux. Three small things differ on Windows, and this course handles them for you:</p>
+<div class="tablewrap"><table>
+<tr><th></th><th>macOS / Linux</th><th>Windows</th></tr>
+<tr><td>Long commands</td><td>Split over lines with <code>\</code> at each line end</td><td>Written on one long line</td></tr>
+<tr><td>Port names</td><td><code>/dev/tty.usbmodem…</code> or <code>/dev/ttyACM0</code></td><td><code>COM3</code>, <code>COM5</code> …</td></tr>
+<tr><td>Your username</td><td colspan="2">The docs write <code>${HF_USER}</code>, a variable. In this course you simply type your own username where you see <code>YOUR_NAME</code>. It is less clever, but it works the same on every system and you always know what the command says.</td></tr>
+</table></div>
+<p class="small">The official docs' command for filling <code>HF_USER</code> automatically currently returns an empty name with recent versions of the login tool, which is one more reason to type it yourself.</p>
+
+<h2>Checklist</h2>
+<ul class="checks">
+<li><label><input type="checkbox"><span>My prompt shows <code>(lerobot)</code> after <code>conda activate lerobot</code></span></label></li>
+<li><label><input type="checkbox"><span><code>lerobot-info</code> prints a report without errors</span></label></li>
+<li><label><input type="checkbox"><span>I know whether I will train on this computer or in the cloud</span></label></li>
+<li><label><input type="checkbox"><span><code>hf auth whoami</code> shows my username</span></label></li>
+</ul>
+
+<div class="quiz">
+<p class="q">You open a new terminal the next day and <code>lerobot-info</code> says "command not found". What is the most likely reason?</p>
+<div class="opts">
+<button data-fb="Installed packages stay on disk. Nothing was deleted.">LeRobot was deleted overnight.</button>
+<button data-ok data-fb="LeRobot lives inside the 'lerobot' environment. A new terminal starts outside it, so run conda activate lerobot first.">The environment is not activated in this terminal.</button>
+<button data-fb="lerobot-info works without internet.">The internet connection is down.</button>
+</div></div>
+
+</div></main>
+<script src="assets/glossary.js"></script>
+<script src="assets/site.js"></script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>

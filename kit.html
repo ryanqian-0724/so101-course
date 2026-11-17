@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>What is in your kit · SO-101 from zero</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body data-page="kit">
+<main><div class="col">
+
+<p class="kicker">Chapter 3 · Hands-on</p>
+<h1>What is in your kit</h1>
+<p class="lede">SO-101 kits are sold by many shops in different versions. Spend fifteen minutes working out exactly which one you have. One mistake here, the wrong power supply on the wrong arm, can burn out motors.</p>
+<div class="meta"><span>15 minutes</span><span>You need: the unopened kit, a marker pen</span></div>
+
+<h2>Step 1: which kind of kit is it?</h2>
+<p>Open the box and answer three questions.</p>
+<div class="tabs">
+<section data-label="Arms already built">
+<p><strong>You have a pre-assembled kit.</strong> Both arms are in one piece. In Seeed Studio's assembled kit the leader is black and the follower is white; other shops use other colours.</p>
+<p>You can skip <a href="motors.html">chapter 5</a> and <a href="assembly.html">chapter 6</a> as tasks, but please still read them: you will need to understand motor IDs and how the arm is put together when something comes loose. After setting up your computer, go to <a href="calibrate.html">chapter 7</a>.</p>
+</section>
+<section data-label="Loose motors + plastic parts">
+<p><strong>You have an unassembled kit with printed parts.</strong> You should find 12 servo motors, two bags of plastic parts (the 3D-printed pieces), two small circuit boards, cables, screws and clamps. This is the most common kit and this course covers every step.</p>
+</section>
+<section data-label="Loose motors, no plastic parts">
+<p><strong>You have a motors-only kit.</strong> The plastic structure must be 3D-printed before you can assemble. See <a href="#printing">3D printing the parts</a> at the bottom of this page. You can do chapters 4 and 5 (computer setup and motor IDs) while the parts print.</p>
+</section>
+</div>
+
+<h2>Step 2: find the two power supplies and read their labels</h2>
+<p>This is the most important check on the page. Every power supply has small print on it saying <code>OUTPUT</code> followed by a voltage, for example <code>5V ⎓ 4A</code> or <code>12V ⎓ 2A</code>.</p>
+<div class="tablewrap"><table>
+<tr><th>What you find</th><th>Your edition</th><th>Which supply goes where</th></tr>
+<tr><td>Two supplies, both <strong>5V</strong></td><td>Standard</td><td>Either one on either arm</td></tr>
+<tr><td>One <strong>5V</strong> and one <strong>12V</strong></td><td>Pro</td><td><span class="leader">Leader: 5V only.</span> <span class="follower">Follower: 12V.</span></td></tr>
+<tr><td>Anything else (for example two 12V)</td><td>Another vendor's variant</td><td>Follow that vendor's instructions for each arm, and check the voltage printed on the motors</td></tr>
+</table></div>
+
+<div class="box danger"><span class="tag">Danger: do not mix up the power supplies</span>
+<p>The leader arm's motors are always the 7.4-volt type, which run on a 5V supply. Plugging a 12V supply into them can destroy them. The vendor's warning is blunt: "watch out that you plug in the right power supply if you have 12V and 7.4V motors, otherwise you might burn your motors!"</p>
+<p><strong>Do this now:</strong> if you have a 12V supply, put a piece of tape on its plug and write <span class="follower">FOLLOWER ONLY</span> on it.</p></div>
+
+<div class="box why"><span class="tag">Why are there two voltages?</span>
+<p>The same servo is made in a 7.4V version and a 12V version. Higher voltage pushes more current through the motor, so it is stronger: about 16.5 kg·cm of turning force for the 7.4V type against 30 kg·cm for the 12V type. The follower does the lifting, so "Pro" kits give it the stronger motors. The leader only needs to be read as a sensor, so it always gets the cheaper 7.4V ones. A motor built for 7.4V cannot survive 12V, just as a 5V phone charger port would not survive mains electricity.</p>
+<p class="small">"kg·cm" means: at 1 cm from the shaft the motor can hold that many kilograms. At 10 cm, a tenth of that.</p></div>
+
+<h2>Step 3: sort the motors</h2>
+<p>An unassembled kit has 12 servos that look almost identical. They are not. Each has a sticker with a model code, and the code tells you the gear ratio.</p>
+<div class="tablewrap"><table>
+<tr><th>Code on the motor</th><th>Voltage</th><th>Gear ratio</th><th>How many</th><th>Where it goes</th></tr>
+<tr><td><code>C001</code></td><td>7.4V</td><td class="num">1/345</td><td>1 (Pro) or 7 (Standard)</td><td><span class="leader">Leader joint 2</span>; in Standard kits also <span class="follower">all 6 follower joints</span></td></tr>
+<tr><td><code>C044</code></td><td>7.4V</td><td class="num">1/191</td><td>2</td><td><span class="leader">Leader joints 1 and 3</span></td></tr>
+<tr><td><code>C046</code></td><td>7.4V</td><td class="num">1/147</td><td>3</td><td><span class="leader">Leader joints 4, 5 and 6</span></td></tr>
+<tr><td><code>C018</code> or <code>C047</code></td><td>12V</td><td class="num">1/345</td><td>6 (Pro only)</td><td><span class="follower">All 6 follower joints</span></td></tr>
+</table></div>
+<p>Take your marker and write on every motor: <strong>L</strong> or <strong>F</strong> (leader or follower) and its joint number 1–6. For example the two <code>C044</code> motors become <strong>L1</strong> and <strong>L3</strong>. In a Standard kit the seven <code>C001</code> motors are interchangeable: pick any one as <strong>L2</strong> and the other six are <strong>F1–F6</strong>.</p>
+
+<div class="box why"><span class="tag">Why bother labelling?</span>
+<p>The most common assembly mistake reported by builders is putting a leader motor with the wrong gear ratio into a joint. You only notice after the arm is fully built, and fixing it means taking the arm apart. Thirty seconds with a marker now saves an hour later. Chapter 2 explained <a href="robot-basics.html">why the leader's gears differ</a>.</p></div>
+
+<h2>Step 4: check everything else is there</h2>
+<ul class="checks">
+<li><label><input type="checkbox"><span>12 servo motors, sorted and labelled (6 leader, 6 follower)</span></label></li>
+<li><label><input type="checkbox"><span>2 motor control boards (small circuit boards with a USB-C socket)</span></label></li>
+<li><label><input type="checkbox"><span>2 USB-C cables</span></label></li>
+<li><label><input type="checkbox"><span>2 power supplies, voltages read and the 12V one (if any) taped and labelled</span></label></li>
+<li><label><input type="checkbox"><span>3-wire motor cables (one usually comes with each motor)</span></label></li>
+<li><label><input type="checkbox"><span>Motor horns (round discs that push onto the motor shaft) and bags of small screws</span></label></li>
+<li><label><input type="checkbox"><span>4 table clamps</span></label></li>
+<li><label><input type="checkbox"><span>3D-printed parts for the leader and for the follower (unless motors-only kit)</span></label></li>
+<li><label><input type="checkbox"><span>A small Phillips (cross-head) screwdriver, sizes #0 and #1</span></label></li>
+<li><label><input type="checkbox"><span>At least one USB camera or webcam (some kits include one; a laptop camera or phone can work too)</span></label></li>
+</ul>
+<p class="small">Kits differ between vendors, so your list may not match exactly. If a part seems to be missing, check the vendor's product page for the parts list of your exact version.</p>
+
+<h2>Safety rules for the whole course</h2>
+<p>The arm is small, but it is a machine that can move suddenly. These rules come from the vendor's safety notes.</p>
+<ul>
+<li><strong>Clamp the arm to the table</strong> before any program moves it. An unclamped arm will tip itself over.</li>
+<li><strong>Switch the power off before plugging or unplugging</strong> any motor cable, USB cable or power connector.</li>
+<li><strong>Keep the area clear.</strong> Remove drinks, phones and anything fragile from within the arm's reach, and keep faces and fingers out of the way while it is powered.</li>
+<li><strong>If anything looks or sounds wrong</strong> (shaking, grinding, a cable pulled tight), stop the program with <kbd>Ctrl</kbd>+<kbd>C</kbd> and unplug the power before you investigate.</li>
+<li><strong>Let the motors rest.</strong> A motor that strains against something it cannot move gets hot. If one feels hot to the touch, power off for a few minutes.</li>
+</ul>
+
+<h2 id="printing">3D printing the parts (motors-only kits)</h2>
+<details class="more"><summary>Open this if your kit has no plastic parts</summary><div>
+<p>The designs are free in the <a href="https://github.com/TheRobotStudio/SO-ARM100">SO-ARM100 repository on GitHub</a>, in the folder <code>STL/SO101</code>. If your school has a 3D printer, these are the tested settings from the designers:</p>
+<div class="tablewrap"><table>
+<tr><th>Setting</th><th>Value</th></tr>
+<tr><td>Material</td><td>PLA+</td></tr>
+<tr><td>Nozzle and layer height</td><td>0.4 mm nozzle at 0.2 mm layers (or 0.6 mm nozzle at 0.4 mm layers)</td></tr>
+<tr><td>Infill</td><td>15%</td></tr>
+<tr><td>Supports</td><td>Everywhere, but ignore slopes steeper than 45°; no supports inside horizontal screw holes</td></tr>
+</table></div>
+<p>All parts for one arm are packed into a single file that fits the print bed: use <code>Ender_Follower_SO101.stl</code> and <code>Ender_Leader_SO101.stl</code> for a 220 × 220 mm bed, or the <code>Prusa_…</code> files for a 205 × 250 mm bed.</p>
+<p><strong>Print a test gauge first.</strong> The <code>STL/Gauges</code> folder has small test pieces. Print one and check that a servo fits snugly. If it is too tight or too loose, your printer needs adjusting before you spend many hours printing the full set.</p>
+<p>Community builders report roughly 8–16 hours of printing for both arms. After printing, remove all support material; a small screwdriver slid underneath it works well.</p>
+<p>No printer? The repository lists <a href="https://github.com/TheRobotStudio/SO-ARM100/blob/main/3DPRINT.md">printing services</a>, and several vendors sell the printed parts on their own. Note that vendor-printed parts can differ slightly from the official files, so buy the parts from the same vendor as your control boards if you can.</p>
+</div></details>
+
+<div class="quiz">
+<p class="q">Your kit has one 5V and one 12V power supply. Which arm gets the 12V one?</p>
+<div class="opts">
+<button data-fb="The leader always has 7.4V motors, which run on 5V. 12V can burn them.">The leader, because you move it by hand and it needs more power.</button>
+<button data-ok data-fb="In a Pro kit the follower has 12V motors for extra strength. The leader always uses 5V.">The follower only.</button>
+<button data-fb="Never guess with power supplies. The leader's 7.4V motors can be destroyed by 12V.">Either, it does not matter.</button>
+</div></div>
+
+</div></main>
+<script src="assets/glossary.js"></script>
+<script src="assets/site.js"></script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>

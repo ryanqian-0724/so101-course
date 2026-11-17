@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Give every motor an ID · SO-101 from zero</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body data-page="motors">
+<main><div class="col">
+
+<p class="kicker">Chapter 5 · Hands-on</p>
+<h1>Give every motor an ID</h1>
+<p class="lede">Before the motors are screwed into the arm, each one needs its own number. You do this first because it must be done one motor at a time, which is far easier while they are loose on the table.</p>
+<div class="meta"><span>30 minutes</span><span>You need: labelled motors, both control boards, power supplies, USB cables, computer with LeRobot installed</span></div>
+
+<div class="box idea"><span class="tag">Pre-assembled kit?</span>
+<p>The vendor has usually done this for you. Read the chapter to understand it, do only "Find the port" below, then continue to <a href="calibrate.html">calibration</a>.</p></div>
+
+<h2>Why this step exists</h2>
+<p>In <a href="robot-basics.html">chapter 2</a> you saw that all six motors of an arm share one set of wires (a <dfn data-g="bus">bus</dfn>), and that the computer addresses each by its ID. New motors leave the factory all set to <strong>ID 1</strong>. If you chained six of them together now, a message to "ID 1" would be answered by all six at once and the replies would collide into garbage.</p>
+<p>So you connect one motor alone, tell it "your ID is now 6", then the next alone, "you are 5", and so on. The motor stores its ID in permanent memory (<dfn data-g="eeprom">EEPROM</dfn>), so it remembers after the power is off. You only ever do this once per motor.</p>
+<p>The same command also sets the <dfn data-g="baudrate">baud rate</dfn>: the speed, in bits per second, at which the motors and computer exchange data. LeRobot uses 1,000,000 bits per second. Both sides must use the same speed, like two people agreeing how fast to speak.</p>
+
+<h2>Part A: find the port</h2>
+<p>When you plug a control board into USB, your computer gives the connection a name called a <dfn data-g="port">port</dfn>. You need that name for every command from now on.</p>
+<ol class="steps">
+<li><div>
+<h3>Connect one board</h3>
+<p>Take the <span class="follower">follower's</span> control board. Plug its power supply into the wall and into the board, and connect the board to your computer with a USB-C cable. No motors need to be attached yet.</p>
+<div class="box warn"><span class="tag">Waveshare boards only</span><p>If your board has two tiny jumper caps next to labels <code>A</code> and <code>B</code>, both must be on <code>B</code>. <code>B</code> means "controlled over USB".</p></div>
+</div></li>
+<li><div>
+<h3>Run the port finder</h3>
+<p>Open your terminal, activate your environment (<code>conda activate lerobot</code>, see <a href="setup.html">chapter 4</a>) and run:</p>
+<pre><code>lerobot-find-port</code></pre>
+<p>It lists the ports it can see, then asks you to unplug the USB cable and press <kbd>Enter</kbd>.</p>
+</div></li>
+<li><div>
+<h3>Unplug, press Enter, read the answer</h3>
+<p>Unplug the USB cable from the board, then press <kbd>Enter</kbd>. The program prints the port that disappeared:</p>
+<div class="tabs" data-group="os">
+<section data-label="Windows"><pre class="out">The port of this MotorsBus is 'COM5'
+Reconnect the USB cable.</pre><p class="small">On Windows the name is <code>COM</code> plus a number. Your number will differ. You can also see it in Device Manager under "Ports (COM &amp; LPT)".</p></section>
+<section data-label="macOS"><pre class="out">The port of this MotorsBus is '/dev/tty.usbmodem575E0032081'
+Reconnect the USB cable.</pre></section>
+<section data-label="Linux"><pre class="out">The port of this MotorsBus is '/dev/ttyACM0'
+Reconnect the USB cable.</pre>
+<p>On Linux you may also need to give yourself permission to use the port:</p>
+<pre><code>sudo chmod 666 /dev/ttyACM0</code></pre></section>
+</div>
+<p>Write the port name on a sticky note and put it on the follower's board. Plug the USB cable back in.</p>
+</div></li>
+<li><div>
+<h3>Repeat for the leader's board</h3>
+<p>Do the same with the <span class="leader">leader's</span> board and its own (5V) power supply, and note its port too.</p>
+</div></li>
+</ol>
+
+<div class="box why"><span class="tag">Why the unplugging trick?</span>
+<p>Your computer may have several serial devices, and nothing on the board announces "I am the follower". The program takes a list of ports, waits for you to unplug, takes the list again, and reports whichever name vanished. Simple and reliable. Port names can change when you use a different USB socket or restart, so if a later command cannot find the arm, run <code>lerobot-find-port</code> again.</p></div>
+
+<h2>Part B: set the IDs of the follower's motors</h2>
+<ol class="steps">
+<li><div>
+<h3>Start the setup program</h3>
+<p>Have your six motors labelled <span class="follower">F1–F6</span> ready. Use the follower's port in place of the example:</p>
+<div class="tabs" data-group="os">
+<section data-label="Windows"><pre><code>lerobot-setup-motors --robot.type=so101_follower --robot.port=COM5</code></pre></section>
+<section data-label="macOS"><pre><code>lerobot-setup-motors \
+    --robot.type=so101_follower \
+    --robot.port=/dev/tty.usbmodem575E0032081</code></pre></section>
+<section data-label="Linux"><pre><code>lerobot-setup-motors \
+    --robot.type=so101_follower \
+    --robot.port=/dev/ttyACM0</code></pre></section>
+</div>
+<div class="dissect"><div class="line">
+<span class="part" data-info="The program that writes an ID and baud rate into each motor's permanent memory.">lerobot-setup-motors</span>
+<span class="part" data-info="Tells LeRobot which robot design this is, so it knows there are six motors and what each is called. The follower counts as a 'robot'.">--robot.type=so101_follower</span>
+<span class="part" data-info="Which USB connection to talk through. Use the port you found in Part A for this arm.">--robot.port=…</span>
+</div></div>
+<p class="small">The backslash <code>\</code> at the end of a line on macOS and Linux only means "the command continues on the next line". On Windows the whole command is written on one line.</p>
+</div></li>
+<li><div>
+<h3>Connect only the gripper motor</h3>
+<p>The program says:</p>
+<pre class="out">Connect the controller board to the 'gripper' motor only and press enter.</pre>
+<p>Plug a 3-wire cable from the board to motor <span class="follower">F6</span>, and nothing else. Check the power plug has not worked loose (it often does while you handle the board), then press <kbd>Enter</kbd>.</p>
+<pre class="out">'gripper' motor id set to 6</pre>
+</div></li>
+<li><div>
+<h3>Swap to the next motor, five more times</h3>
+<p>Unplug the cable <em>from the board</em> (you can leave it in the motor, it will be needed there later). Connect the next motor the program asks for, alone, and press <kbd>Enter</kbd>. The order counts down from the hand to the base:</p>
+<div class="tablewrap"><table>
+<tr><th>Program asks for</th><th>Connect your motor</th><th>ID it receives</th></tr>
+<tr><td><code>gripper</code></td><td>F6</td><td class="num">6</td></tr>
+<tr><td><code>wrist_roll</code></td><td>F5</td><td class="num">5</td></tr>
+<tr><td><code>wrist_flex</code></td><td>F4</td><td class="num">4</td></tr>
+<tr><td><code>elbow_flex</code></td><td>F3</td><td class="num">3</td></tr>
+<tr><td><code>shoulder_lift</code></td><td>F2</td><td class="num">2</td></tr>
+<tr><td><code>shoulder_pan</code></td><td>F1</td><td class="num">1</td></tr>
+</table></div>
+<p>When the sixth is done the program simply ends. That means success.</p>
+</div></li>
+</ol>
+
+<h2>Part C: the leader's motors</h2>
+<p>Switch to the <span class="leader">leader's</span> board, its <strong>5V</strong> power supply and its port. The command is almost the same, but because the leader is a "teleoperator" and not a "robot", the option names change:</p>
+<div class="tabs" data-group="os">
+<section data-label="Windows"><pre><code>lerobot-setup-motors --teleop.type=so101_leader --teleop.port=COM6</code></pre></section>
+<section data-label="macOS"><pre><code>lerobot-setup-motors \
+    --teleop.type=so101_leader \
+    --teleop.port=/dev/tty.usbmodem575E0031751</code></pre></section>
+<section data-label="Linux"><pre><code>lerobot-setup-motors \
+    --teleop.type=so101_leader \
+    --teleop.port=/dev/ttyACM1</code></pre></section>
+</div>
+<p>Here the labels matter most. When it asks for <code>gripper</code> connect <span class="leader">L6</span>, for <code>wrist_roll</code> connect <span class="leader">L5</span>, and so on down to <span class="leader">L1</span>. Because the leader's motors have different gears, a motor given the wrong ID will end up in the wrong joint.</p>
+
+<h2>If something goes wrong</h2>
+<div class="tablewrap"><table>
+<tr><th>What you see</th><th>Likely cause</th><th>Fix</th></tr>
+<tr><td><code>Motor 'gripper' was not found</code> or another error right after pressing Enter</td><td>The motor is not getting power or data</td><td>Check three things: the power supply is plugged in at both ends, the USB cable is in, and the 3-wire cable is pushed fully into both the board and the motor</td></tr>
+<tr><td>Same error on a Waveshare board</td><td>Jumpers on <code>A</code></td><td>Move both jumpers to <code>B</code></td></tr>
+<tr><td>Error mentioning the port</td><td>Port name changed or mistyped</td><td>Run <code>lerobot-find-port</code> again</td></tr>
+<tr><td>You connected the wrong motor</td><td>Human error, very common</td><td>Run the whole command again from the start. Setting an ID again simply overwrites the old one</td></tr>
+</table></div>
+
+<div class="quiz">
+<p class="q">Why must only one motor be connected each time you press Enter?</p>
+<div class="opts">
+<button data-fb="The power supply can run all six; that is not the reason.">The power supply is too weak for two motors.</button>
+<button data-ok data-fb="New motors all share ID 1. With two connected, both would answer and both would be renamed to the same new ID.">New motors all have the same ID, so the computer could not tell them apart.</button>
+<button data-fb="The motor does not move during ID setup.">So that the motors do not hit each other.</button>
+</div></div>
+
+</div></main>
+<script src="assets/glossary.js"></script>
+<script src="assets/site.js"></script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>

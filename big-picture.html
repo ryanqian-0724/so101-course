@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The big picture · SO-101 from zero</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body data-page="big-picture">
+<main><div class="col">
+
+<p class="kicker">Chapter 1 · Ideas</p>
+<h1>The big picture</h1>
+<p class="lede">Before touching a screwdriver, see the whole journey once. Every later chapter is one piece of the loop on this page.</p>
+<div class="meta"><span>10 minutes</span><span>No equipment needed</span></div>
+
+<h2>What you are going to do</h2>
+<p>Your kit contains two small robot arms. By the end of this course, one of them will pick up an object and put it in a box <strong>by itself</strong>, looking through a camera and deciding how to move. Nobody will have written instructions like "move 12 cm left". Instead, you will <em>show</em> the robot what to do about fifty times, and a computer program will work out the pattern.</p>
+<p>This way of teaching is called <dfn data-g="imitation">imitation learning</dfn>. It is how most robot-learning research is done today, and your kit is the same kind of tool researchers use, just smaller and cheaper.</p>
+
+<div class="box analogy"><span class="tag">Analogy</span>
+<p>Think about learning to tie shoelaces. Nobody gave you a list of finger coordinates. Someone showed you, many times, and your brain found the pattern. You will do the same for the robot: you are the teacher, the recorded demonstrations are the lessons, and the trained program is what the robot "remembers".</p></div>
+
+<h2>The five stages</h2>
+<figure class="figure">
+<svg viewBox="0 0 760 210" width="760" role="img" aria-label="Five stages: build, teleoperate, record, train, run">
+  <g font-family="Inter, sans-serif" font-size="13" text-anchor="middle">
+    <g fill="var(--surface)" stroke="var(--line)" stroke-width="2">
+      <rect x="10" y="40" width="130" height="92" rx="10"/><rect x="162" y="40" width="130" height="92" rx="10"/>
+      <rect x="314" y="40" width="130" height="92" rx="10"/><rect x="466" y="40" width="130" height="92" rx="10"/>
+      <rect x="618" y="40" width="130" height="92" rx="10"/>
+    </g>
+    <g fill="var(--ink)" font-weight="700" font-size="15" font-family="Space Grotesk, sans-serif">
+      <text x="75" y="70">1 Build</text><text x="227" y="70">2 Teleoperate</text><text x="379" y="70">3 Record</text><text x="531" y="70">4 Train</text><text x="683" y="70">5 Run</text>
+    </g>
+    <g fill="var(--muted)">
+      <text x="75" y="94">assemble and</text><text x="75" y="111">calibrate arms</text>
+      <text x="227" y="94">move the leader,</text><text x="227" y="111">follower copies</text>
+      <text x="379" y="94">save ~50 demos</text><text x="379" y="111">as a dataset</text>
+      <text x="531" y="94">a neural network</text><text x="531" y="111">learns the pattern</text>
+      <text x="683" y="94">the robot acts</text><text x="683" y="111">on its own</text>
+    </g>
+    <g stroke="var(--accent)" stroke-width="2.5" fill="none">
+      <path d="M142 86h16M294 86h16M446 86h16M598 86h16"/>
+      <path d="M683 134v36H379v-34" stroke-dasharray="6 5"/>
+    </g>
+    <g fill="var(--accent)"><path d="M160 86l-8-5v10zM312 86l-8-5v10zM464 86l-8-5v10zM616 86l-8-5v10zM379 134l-5 9h10z"/></g>
+    <text x="531" y="192" fill="var(--accent)" font-weight="600">not good enough? record better demos and train again</text>
+  </g>
+</svg>
+<figcaption>The dashed arrow is the part people forget: robot learning is a loop. Your first attempt will probably fail, and the fix is almost always better data.</figcaption>
+</figure>
+
+<ol>
+<li><strong>Build.</strong> You assemble two arms. The <span class="leader">leader</span> is the one you hold; the <span class="follower">follower</span> is the one that does the work.</li>
+<li><strong>Teleoperate.</strong> You move the leader by hand, and the follower copies you instantly. This is called <dfn data-g="teleoperation">teleoperation</dfn>: operating something from a distance.</li>
+<li><strong>Record.</strong> While you teleoperate a task, the computer saves everything: what the cameras saw and how every joint moved, 30 times per second. Each attempt is an <dfn data-g="episode">episode</dfn>; the pile of episodes is a <dfn data-g="dataset">dataset</dfn>.</li>
+<li><strong>Train.</strong> A program studies the dataset and adjusts millions of internal numbers until it can predict "given this camera image and these joint angles, the human moved like <em>this</em>".</li>
+<li><strong>Run.</strong> The leader is put away. The trained program now watches the camera and moves the follower itself.</li>
+</ol>
+
+<h2>The one word to learn today: policy</h2>
+<p>The thing that training produces has a name: a <dfn data-g="policy">policy</dfn>. A policy is a function. It takes in what the robot currently senses (the <dfn data-g="observation">observation</dfn>) and gives back what the robot should do next (the <dfn data-g="action">action</dfn>).</p>
+<figure class="figure">
+<svg viewBox="0 0 620 120" width="620" role="img" aria-label="Observation goes into the policy, action comes out">
+  <g font-family="Inter, sans-serif" font-size="13" text-anchor="middle">
+    <rect x="10" y="20" width="180" height="80" rx="10" fill="var(--follower-soft)"/>
+    <text x="100" y="48" font-weight="700" fill="var(--ink)">Observation</text>
+    <text x="100" y="68" fill="var(--muted)">camera images</text><text x="100" y="85" fill="var(--muted)">+ 6 joint angles</text>
+    <rect x="240" y="20" width="140" height="80" rx="10" fill="var(--ink)"/>
+    <text x="310" y="56" font-weight="700" fill="var(--bg)" font-size="16" font-family="Space Grotesk, sans-serif">Policy</text>
+    <text x="310" y="76" fill="var(--bg)">a neural network</text>
+    <rect x="430" y="20" width="180" height="80" rx="10" fill="var(--leader-soft)"/>
+    <text x="520" y="48" font-weight="700" fill="var(--ink)">Action</text>
+    <text x="520" y="68" fill="var(--muted)">6 target joint angles</text><text x="520" y="85" fill="var(--muted)">for the next moment</text>
+    <g stroke="var(--muted)" stroke-width="2.5"><path d="M194 60h36M384 60h36"/></g>
+    <g fill="var(--muted)"><path d="M238 60l-9-5v10zM428 60l-9-5v10z"/></g>
+  </g>
+</svg>
+<figcaption>This happens about 30 times every second: look, decide, move, look again.</figcaption>
+</figure>
+<p>When you teleoperate, <em>you</em> are the policy: your eyes are the observation and your hand on the leader arm produces the action. Training builds a program that imitates the policy in your head.</p>
+
+<div class="box why"><span class="tag">Why not just program the moves?</span>
+<p>You could write "go to position A, close gripper, go to position B". That works in a factory where every part arrives in exactly the same place. It breaks the moment the object is 3 cm to the left, rotated, or a different colour. Writing rules for every possible situation is impossible, so instead we let the robot learn from examples that include that variety.</p></div>
+
+<h2>The tools, and who makes them</h2>
+<div class="cards">
+<div><h3>SO-101</h3><p class="small">The robot arm design. Open-source, 3D-printed, designed by TheRobotStudio together with Hugging Face. Also sold as "SO-ARM101".</p></div>
+<div><h3>LeRobot</h3><p class="small">The free software, written in Python by Hugging Face, that talks to the motors, records data, trains policies and runs them.</p></div>
+<div><h3>Hugging Face Hub</h3><p class="small">A website where people share datasets and trained models. Your recordings and your policy will be stored there.</p></div>
+</div>
+
+<h2>What to expect, realistically</h2>
+<div class="tablewrap"><table>
+<tr><th>Stage</th><th>Rough time</th><th>Where the number comes from</th></tr>
+<tr><td>Computer setup</td><td>30–60 min</td><td>Mostly waiting for downloads</td></tr>
+<tr><td>Motor setup and assembly</td><td>3–4 hours for both arms</td><td>Reports from people who built one; the official docs give no figure</td></tr>
+<tr><td>Recording 50 episodes</td><td>1–2 hours</td><td>50 is the starting amount the LeRobot docs suggest</td></tr>
+<tr><td>Training</td><td>30 min to several hours</td><td>LeRobot's hardware guide; depends heavily on your graphics card</td></tr>
+</table></div>
+<p>Expect your first policy to be clumsy. That is normal and it is where the real learning starts, because figuring out <em>why</em> it fails teaches you how these systems work.</p>
+
+<div class="quiz">
+<p class="q">In this course, how does the robot learn to pick up an object?</p>
+<div class="opts">
+<button data-fb="No coordinates are typed in. That is classical programming, which breaks when the object moves.">You type in the exact coordinates of every movement.</button>
+<button data-ok data-fb="You demonstrate with the leader arm, the demonstrations are recorded, and a neural network learns to imitate them.">You demonstrate the task many times and a program learns to imitate you.</button>
+<button data-fb="Trial and error with rewards is a different method called reinforcement learning. We meet it in the last chapter.">The robot tries random movements until something works.</button>
+</div></div>
+
+<div class="quiz">
+<p class="q">What is a policy?</p>
+<div class="opts">
+<button data-fb="That is the dataset.">The collection of recorded demonstrations.</button>
+<button data-ok data-fb="Observation in, action out. During teleoperation you are the policy; after training, a neural network is.">A function that turns what the robot senses into what it should do next.</button>
+<button data-fb="Safety rules matter, but that is not what the word means in robotics.">A list of safety rules for the robot.</button>
+</div></div>
+
+</div></main>
+<script src="assets/glossary.js"></script>
+<script src="assets/site.js"></script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>

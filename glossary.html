@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Glossary · SO-101 from zero</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="assets/site.css">
+<style>#glossaryList { display: grid; gap: 0.6rem; } #glossarySearch { width: 100%; padding: 0.7rem 0.9rem; font: inherit; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); }</style>
+</head>
+<body data-page="glossary">
+<main><div class="col">
+
+<p class="kicker">Reference</p>
+<h1>Glossary</h1>
+<p class="lede">Every technical term used in this course, in plain words. In the chapters, words with a dashed underline show these definitions when you point at them.</p>
+<label for="glossarySearch" class="small">Search the glossary</label>
+<input id="glossarySearch" type="search" placeholder="Type a word, for example: policy" autocomplete="off">
+<div id="glossaryList"></div>
+
+</div></main>
+<script src="assets/glossary.js"></script>
+<script src="assets/site.js"></script>
+</body>
+</html>

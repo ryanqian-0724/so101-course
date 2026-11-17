@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Diffusion, VLAs and world models · SO-101 from zero</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body data-page="frontier">
+<main><div class="col">
+
+<p class="kicker">Chapter 14 · Ideas</p>
+<h1>Diffusion, VLAs and world models</h1>
+<p class="lede">ACT is where you start, not where the field is. This chapter explains the bigger ideas you will meet in robotics news and papers, using what you now know from your own robot.</p>
+<div class="meta"><span>35 minutes</span><span>2 interactive demos</span></div>
+
+<h2>The limits you have already felt</h2>
+<p>Your ACT policy does one task, in one place, under one light. It cannot be told what to do. It knows nothing about the world beyond 50 demonstrations. Each idea below attacks one of these limits.</p>
+<div class="tablewrap"><table>
+<tr><th>Limit of your ACT policy</th><th>Idea that addresses it</th></tr>
+<tr><td>Struggles when demonstrations show several valid ways</td><td>Diffusion and flow matching</td></tr>
+<tr><td>Cannot follow instructions; knows nothing about objects</td><td>Vision-language-action models (VLAs)</td></tr>
+<tr><td>Cannot think ahead about consequences</td><td>World models</td></tr>
+<tr><td>Can never become better than its teacher</td><td>Reinforcement learning</td></tr>
+<tr><td>Needs real demonstrations for everything</td><td>Simulation and shared datasets</td></tr>
+</table></div>
+
+<h2>1. Diffusion: generating actions out of noise</h2>
+<p>Recall the averaging trap from <a href="imitation.html">chapter 10</a>: when demonstrations go both left and right around an obstacle, a network that predicts the average drives into it. ACT's style input helps. <strong>Diffusion Policy</strong> (2023, Columbia University and others) solves the problem from a different direction, borrowing the method behind AI image generators.</p>
+<p>The training trick is strange at first:</p>
+<ol>
+<li>Take a real chunk of actions from a demonstration.</li>
+<li>Add a random amount of noise to it, scrambling the numbers.</li>
+<li>Train a network to look at the scrambled chunk (and the camera image) and predict the noise that was added.</li>
+</ol>
+<p>A network that can spot the noise can remove it. So to act, the robot starts with a chunk of <em>pure random numbers</em> and repeatedly asks the network "what here is noise?", subtracting a little each time. After a number of rounds, a clean, sensible action chunk remains.</p>
+
+<div class="widget" data-widget="diffusion">
+<div class="wtitle"><span>Try it: denoise a path</span></div>
+<p class="caption">The dots are a planned path, starting as random noise. Step through the denoising and watch a clean path emerge that passes the obstacle on one side. Press "Start from fresh noise" and run it again a few times: sometimes it goes over, sometimes under, but it never takes the crashing "average" route. Different starting noise leads to different, equally valid answers.</p>
+</div>
+
+<div class="box analogy"><span class="tag">Analogy</span><p>A sculptor starts with a rough block and removes a little stone at a time until a statue appears. Training taught the sculptor what statues look like. Two different rough blocks give two different statues, both fine, and never a blurry blend of the two.</p></div>
+
+<p><strong>The price is speed.</strong> One decision needs many passes through the network instead of one. The original paper used 100 denoising rounds in training and brought it down to about 10–16 when running on real robots.</p>
+<p><strong>Flow matching</strong> is a newer relative with the same spirit. The network learns a direction that carries noise toward real actions along a nearly straight route, so it gets there in few steps (commonly 10). Most of the large models below use flow matching to produce their actions.</p>
+
+<h2>2. VLAs: robots that start with knowledge of the world</h2>
+<h3>First, a VLM</h3>
+<p>A <strong>vision-language model</strong> (VLM) is a large Transformer trained on enormous numbers of images paired with text from the internet. It can look at a photo and answer questions about it. It knows what a cup looks like, what "left of" means, and that bananas are yellow. It has, however, never moved anything.</p>
+<h3>Then, add actions</h3>
+<p>A <dfn data-g="vla">vision-language-action model</dfn> (VLA) starts from a VLM and trains it further on robot data, so that it outputs actions. Its inputs are camera images, the robot's joint values, and an instruction in ordinary language such as "put the red brick in the box".</p>
+<figure class="figure">
+<svg viewBox="0 0 700 170" width="700" role="img" aria-label="A VLA takes images, an instruction and joint values, and outputs a chunk of actions">
+  <g font-family="Inter, sans-serif" font-size="12.5" text-anchor="middle">
+    <rect x="8" y="10" width="150" height="38" rx="8" fill="var(--follower-soft)"/><text x="83" y="34" fill="var(--ink)">camera images</text>
+    <rect x="8" y="64" width="150" height="38" rx="8" fill="var(--follower-soft)"/><text x="83" y="88" fill="var(--ink)">"put the brick in the box"</text>
+    <rect x="8" y="118" width="150" height="38" rx="8" fill="var(--follower-soft)"/><text x="83" y="142" fill="var(--ink)">joint values</text>
+    <rect x="215" y="26" width="190" height="112" rx="10" fill="var(--ink)"/>
+    <text x="310" y="68" fill="var(--bg)" font-weight="700" font-size="15" font-family="Space Grotesk, sans-serif">VLM backbone</text>
+    <text x="310" y="90" fill="var(--bg)">pretrained on internet</text><text x="310" y="106" fill="var(--bg)">images and text</text>
+    <rect x="450" y="46" width="110" height="72" rx="10" fill="var(--surface)" stroke="var(--line)" stroke-width="2"/>
+    <text x="505" y="78" fill="var(--ink)" font-weight="600">action expert</text><text x="505" y="96" fill="var(--muted)">flow matching</text>
+    <rect x="598" y="56" width="94" height="52" rx="8" fill="var(--leader-soft)"/><text x="645" y="79" fill="var(--ink)" font-weight="600">action</text><text x="645" y="95" fill="var(--ink)" font-weight="600">chunk</text>
+    <g stroke="var(--muted)" stroke-width="2" fill="none"><path d="M160 29c30 0 26 28 50 34M160 83h50M160 137c30 0 26-28 50-34M407 82h38M562 82h32"/></g>
+    <g fill="var(--muted)"><path d="M213 83l-8-5v10zM448 82l-8-5v10zM596 82l-8-5v10z"/></g>
+  </g>
+</svg>
+<figcaption>The common design in 2025–26: a VLM that understands the scene and instruction, feeding a smaller network that turns that understanding into smooth motion.</figcaption>
+</figure>
+
+<p>There are two ways VLAs produce actions:</p>
+<ul>
+<li><strong>Actions as words.</strong> Chop each joint's range into numbered bins and have the language model "write" the numbers one at a time, as it writes text. Simple, but slow and coarse. Used by early VLAs such as Google's RT-2 (2023) and OpenVLA (2024).</li>
+<li><strong>A separate action expert.</strong> A smaller network attached to the VLM generates a whole chunk of precise actions with flow matching. Used by most current models.</li>
+</ul>
+
+<h3>Pretraining and fine-tuning</h3>
+<p>These models are built in stages. The VLM is <strong>pretrained</strong> on internet data. The VLA is then pretrained on thousands of hours of demonstrations from many robots. Finally you <strong>fine-tune</strong> it: continue training briefly on a few dozen demonstrations of <em>your</em> robot and task.</p>
+<div class="box analogy"><span class="tag">Analogy</span><p>ACT is a newborn that must learn everything from your 50 demos. A pretrained VLA is a student who has read millions of illustrated books and watched many other robots work, and now needs a few days of practice on your particular arm.</p></div>
+<div class="box warn"><span class="tag">A common misunderstanding</span><p>A pretrained VLA does <em>not</em> work on your SO-101 straight out of the box. Robots differ in shape, cameras and how actions are numbered. The SmolVLA docs state that fine-tuning on your own data is required.</p></div>
+
+<h3>The models you will hear about</h3>
+<div class="tablewrap"><table>
+<tr><th>Model</th><th>From</th><th>Size</th><th>Notes</th></tr>
+<tr><td>ACT</td><td>Stanford, Berkeley, Meta (2023)</td><td>~80 million</td><td>No language. Trains from scratch. Your starting point</td></tr>
+<tr><td>Diffusion Policy</td><td>Columbia and others (2023)</td><td>hundreds of millions</td><td>No language. Good with varied demonstrations</td></tr>
+<tr><td>SmolVLA</td><td>Hugging Face (2025)</td><td>450 million</td><td>Small VLA, pretrained on community LeRobot datasets. Designed for arms like yours</td></tr>
+<tr><td>π0 ("pi-zero") family</td><td>Physical Intelligence (2024–25)</td><td>3.3 billion (π0)</td><td>Pretrained on over 10,000 hours of robot data. Needs a large GPU</td></tr>
+<tr><td>GR00T N1.7</td><td>NVIDIA</td><td>3 billion</td><td>Aimed at humanoid robots; can be adapted to the SO-101</td></tr>
+</table></div>
+<p class="small">"Size" is the number of parameters. All of these can be trained with LeRobot. The list of supported policies grows quickly: at the time of writing LeRobot included 29.</p>
+
+<p>Does bigger and pretrained actually help? In the SmolVLA paper's own tests on an SO-101 pick-and-place task, SmolVLA scored 90% on seen positions and 50% on unseen ones, against 70% and 40% for ACT. The same paper found pretraining lifted SmolVLA's average on another set of tasks from 51.7% to 78.3%. Treat these as one team's measurements on a few tasks, not a universal ranking.</p>
+
+<details class="more"><summary>Try it yourself: fine-tune SmolVLA on your dataset</summary><div>
+<p>This is a good second project once ACT works. It needs a GPU with roughly 10–16 GB of memory (or a rented one), and the docs estimate about 4 hours for 20,000 steps on a high-end cloud GPU.</p>
+<pre><code>pip install "lerobot[smolvla]"</code></pre>
+<pre><code>lerobot-train --policy.path=lerobot/smolvla_base --dataset.repo_id=YOUR_NAME/so101_pick_place --policy.repo_id=YOUR_NAME/smolvla_so101_pick_place --rename_map='{"observation.images.top": "observation.images.camera1", "observation.images.wrist": "observation.images.camera2"}' --batch_size=8 --steps=20000 --output_dir=outputs/train/smolvla_so101 --job_name=smolvla_so101 --policy.device=cuda</code></pre>
+<p>Two things differ from ACT. <code>--policy.path=lerobot/smolvla_base</code> starts from the pretrained model instead of random numbers. And <code>--rename_map</code> translates your camera names into the names the pretrained model expects (<code>camera1</code>, <code>camera2</code>); without it training stops with a mismatch error. You must pass the same <code>--rename_map</code> to <code>lerobot-rollout</code>, together with the task sentence, which now matters.</p>
+<p class="small">The official example uses a batch size of 64, which needs a very large GPU; 8 is a safer start. In the Windows Miniforge Prompt, single quotes do not work around the rename map; run this one on macOS, Linux or in the cloud.</p>
+</div></details>
+
+<h2>3. World models: imagining before acting</h2>
+<p>A policy answers "what should I do?". A <dfn data-g="world-model">world model</dfn> answers a different question: <strong>"what will happen if I do this?"</strong> It takes the current situation and a possible action, and predicts the result.</p>
+<p>You have one in your head. Before throwing a ball you can picture roughly where it will land. That prediction is not a decision, but it makes good decisions possible.</p>
+
+<div class="widget" data-widget="worldmodel">
+<div class="wtitle"><span>Try it: plan by imagination</span></div>
+<p class="caption">The robot wants to push the block onto the target. Press "Imagine": its world model predicts where the block would end up for seven different pushes, without moving anything. Then "Act on the best one". The real block lands close to, but not exactly on, the prediction, because the model's physics is learned and imperfect.</p>
+</div>
+
+<p>What world models are used for:</p>
+<ul>
+<li><strong>Planning.</strong> Imagine many options and pick the best, as in the demo.</li>
+<li><strong>Practising in imagination.</strong> Train a policy inside the model's predictions instead of on a real robot. The 2018 paper that popularised the term trained a game-playing agent entirely "inside of its own dream".</li>
+<li><strong>Making training data.</strong> Generate realistic video of situations that would be slow or dangerous to film.</li>
+<li><strong>Testing policies</strong> without risking hardware.</li>
+</ul>
+<p>Names you may meet: DreamerV3 (learns games by imagining futures), V-JEPA 2 from Meta (trained on over a million hours of video), Cosmos from NVIDIA, and Genie 3 from Google DeepMind (generates interactive worlds you can move around in for a few minutes).</p>
+<p>A recent development blends the two ideas: <strong>world action models</strong> are trained to predict future video <em>and</em> actions together, on the theory that learning to predict how the world moves teaches useful physics. Several are now available in LeRobot.</p>
+<div class="box warn"><span class="tag">Keep expectations honest</span><p>Generated video that looks convincing is not the same as correct physics. The companies building these systems say so themselves: objects sometimes change shape or vanish, and whether success inside a world model predicts success in reality is still an open research question.</p></div>
+
+<h2>4. Reinforcement learning: learning by trying</h2>
+<p>Imitation learning copies a teacher, so it can match you but not beat you, and it never learns from its own mistakes. <dfn data-g="rl">Reinforcement learning</dfn> (RL) works differently: the robot tries things, gets a <strong>reward</strong> (a number that says how well it did), and adjusts to earn more reward.</p>
+<div class="tablewrap"><table>
+<tr><th></th><th>Imitation learning</th><th>Reinforcement learning</th></tr>
+<tr><td>Learns from</td><td>Human demonstrations</td><td>Its own attempts and a reward signal</td></tr>
+<tr><td>Can exceed the teacher?</td><td>No</td><td>Yes</td></tr>
+<tr><td>Main difficulty</td><td>Collecting good demonstrations</td><td>Needs huge numbers of attempts; early attempts are random and can damage a real robot; someone must define and measure "success"</td></tr>
+<tr><td>Analogy</td><td>Learning to cook by watching videos</td><td>Learning by cooking and tasting, burning many dinners on the way</td></tr>
+</table></div>
+<p>Because random flailing is hard on real hardware, practical methods combine both. LeRobot includes one called <strong>HIL-SERL</strong> ("human in the loop"): it starts from a few demonstrations, lets the robot practise, and has a person take over briefly whenever it goes wrong. Its authors report near-perfect success on tricky tasks after one to two and a half hours of real-world practice. The newest large models are also beginning to add RL on top of imitation, learning from their own experience on the job.</p>
+
+<h2>5. Simulation, shared data, and why robots are behind chatbots</h2>
+<p><strong>Simulation</strong> means training in a physics engine, like a video game built for robots. It is fast, safe, and can run thousands of copies at once. Its weakness is the <strong>sim-to-real gap</strong>: simulated friction, contact, lighting and cameras never match reality exactly, so a policy that is perfect in simulation can stumble on a real table.</p>
+<p><strong>Why data is the bottleneck.</strong> Language models learned from text that already existed: essentially the written internet. There is no internet of robot movements. Every demonstration needs a physical robot and a person's time, exactly as you experienced in chapter 11.</p>
+<div class="tablewrap"><table>
+<tr><th>Dataset</th><th>Size</th></tr>
+<tr><td>Your first dataset</td><td>~50 episodes, ~45,000 frames</td></tr>
+<tr><td>SmolVLA's pretraining data (community LeRobot datasets)</td><td>22,900 episodes, 10.6 million frames</td></tr>
+<tr><td>Open X-Embodiment (22 robot types, pooled by 34 research labs)</td><td>over 1 million episodes</td></tr>
+<tr><td>π0's pretraining data</td><td>over 10,000 hours</td></tr>
+</table></div>
+<p>This is why open projects matter. Every dataset uploaded to the Hub in LeRobot format, yours included, can become training material for the next shared model. Pooling data from different robot bodies is called <strong>cross-embodiment</strong> training, and it has been shown to help: skills learned on one arm transfer partly to another.</p>
+<div class="box idea"><span class="tag">Moravec's paradox</span>
+<p>Computers beat world champions at chess decades ago, yet folding a towel is still a research problem. The roboticist Hans Moravec noted in the 1980s that the things humans find hard (logic, arithmetic) are easy for machines, while the things a one-year-old does without thinking (seeing, grasping, balancing) are extremely hard. Our effortless skills are effortless because evolution spent hundreds of millions of years on them. After fighting to make an arm pick up one brick, you understand this better than most people.</p></div>
+
+<h2>Where to go from here</h2>
+<div class="cards">
+<div><h3>Improve what you have</h3><p class="small">More varied data, a second camera, a harder task. The <a href="evaluate.html">improvement loop</a> is the core skill.</p></div>
+<div><h3>Try a VLA</h3><p class="small">Fine-tune SmolVLA on your dataset and compare it with ACT using the same 20 trials.</p></div>
+<div><h3>Learn the theory properly</h3><p class="small">The free <a href="https://huggingface.co/learn/robotics-course">Hugging Face Robotics Course</a> and the LeRobot team's <a href="https://huggingface.co/spaces/lerobot/robot-learning-tutorial">Robot Learning tutorial</a>.</p></div>
+<div><h3>Join the community</h3><p class="small">Share your dataset, read others' build logs, and ask questions on the LeRobot Discord. Links are on the <a href="sources.html">sources page</a>.</p></div>
+</div>
+
+<div class="quiz">
+<p class="q">What is the essential difference between a policy and a world model?</p>
+<div class="opts">
+<button data-ok data-fb="A policy chooses. A world model predicts consequences. A world model needs something else (a planner or a policy) to actually pick actions.">A policy outputs what to do; a world model predicts what would happen if you did something.</button>
+<button data-fb="Size is not the distinction. Either can be large or small.">A world model is just a bigger policy.</button>
+<button data-fb="Both can be used on real robots or in simulation.">A policy is for real robots and a world model is for simulation only.</button>
+</div></div>
+
+<div class="quiz">
+<p class="q">Why can a pretrained VLA learn a new task from fewer demonstrations than a model trained from scratch needs for the same quality?</p>
+<div class="opts">
+<button data-fb="The network is larger, not smaller.">Because it has fewer parameters to adjust.</button>
+<button data-ok data-fb="It already knows what objects look like, what instructions mean, and how robot arms tend to move. Fine-tuning only has to teach it your specific arm and task.">Because it arrives already knowing a lot about images, language and robot motion.</button>
+<button data-fb="Fine-tuning on your own robot's data is still required.">Because it does not need any demonstrations at all.</button>
+</div></div>
+
+</div></main>
+<script src="assets/glossary.js"></script>
+<script src="assets/site.js"></script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>

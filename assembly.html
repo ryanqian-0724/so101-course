@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Assemble the arms · SO-101 from zero</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body data-page="assembly">
+<main><div class="col">
+
+<p class="kicker">Chapter 6 · Hands-on</p>
+<h1>Assemble the arms</h1>
+<p class="lede">You build each arm from the table upward: base, shoulder, elbow, wrist, hand. The two arms are built the same way until the very last step.</p>
+<div class="meta"><span>About 2 hours for the follower, 1.5 for the leader</span><span>You need: motors with IDs set, printed parts, screws, screwdriver</span></div>
+<p class="small">Times are from people who have built the kit; the official guide gives none. Working in pairs is faster and catches mistakes.</p>
+
+<h2>Before you start</h2>
+<ul class="checks">
+<li><label><input type="checkbox"><span>Every motor has its ID set (<a href="motors.html">chapter 5</a>) and is labelled L1–L6 or F1–F6</span></label></li>
+<li><label><input type="checkbox"><span>All support material is removed from the printed parts (the thin scaffolding left by the 3D printer; lever it off with a small screwdriver)</span></label></li>
+<li><label><input type="checkbox"><span>Power supplies are unplugged. Nothing is powered during assembly</span></label></li>
+<li><label><input type="checkbox"><span>The official assembly videos are open in another tab (links in each step below)</span></label></li>
+</ul>
+
+<div class="box idea"><span class="tag">Watch, then do</span>
+<p>Text can tell you <em>which</em> screws; only video shows <em>how the parts sit</em>. For each joint: watch the short official video once, then build with this page as your checklist. The steps here follow the <a href="https://huggingface.co/docs/lerobot/so101">official LeRobot SO-101 guide</a>.</p></div>
+
+<h2>The three things you will handle</h2>
+<div class="cards">
+<div><h3>Motor horn</h3><p class="small">A round disc that pushes onto the motor's shaft. The arm's plastic parts screw onto the horn, so when the shaft turns, the part turns. Most motors get two: one on the shaft (top) and a free-spinning one on the opposite side (bottom) so the joint is held from both sides.</p></div>
+<div><h3>M2×6 screws</h3><p class="small">The <strong>smallest</strong> screws. They hold a motor's body into its plastic holder. "M2" means 2 mm thread diameter, "6" means 6 mm long.</p></div>
+<div><h3>M3×6 screws</h3><p class="small">The <strong>thicker</strong> screws. They fix a horn to its shaft and fix plastic parts to the horns.</p></div>
+</div>
+<div class="box warn"><span class="tag">Three habits that prevent rebuilds</span>
+<ul>
+<li><strong>Read the label before every motor goes in.</strong> Joint 3 of the leader takes L3, nothing else.</li>
+<li><strong>Plug a 3-wire cable into each motor as you place it</strong>, and route cables as you go. Builders report that threading cables through a finished arm is the most frustrating part.</li>
+<li><strong>Snug, not tight.</strong> You are screwing metal into plastic. Stop turning when the screw stops; forcing it strips the plastic thread.</li>
+</ul></div>
+
+<h2>Build the follower</h2>
+<p>Start with the <span class="follower">follower</span> (motors F1–F6).</p>
+<ol class="steps">
+<li><div>
+<h3>Joint 1: base and shoulder pan (motor 1)</h3>
+<p><a href="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/lerobot/Joint1_v2.mp4">Watch the Joint 1 video</a></p>
+<ul>
+<li>Push both horns onto motor 1. Fix the top horn with one M3×6 screw. The bottom horn needs no screw.</li>
+<li>Place the motor into the base.</li>
+<li>Fasten it with four M2×6 screws: two from the top, two from the bottom.</li>
+<li>Slide the first motor holder over it and fasten with two M2×6 screws, one each side.</li>
+<li>Attach the shoulder part with four M3×6 screws on top and four on the bottom.</li>
+<li>Add the shoulder motor holder.</li>
+</ul>
+</div></li>
+<li><div>
+<h3>Joint 2: shoulder lift (motor 2)</h3>
+<p><a href="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/lerobot/Joint2_v2.mp4">Watch the Joint 2 video</a></p>
+<ul>
+<li>Fit both horns; M3×6 screw in the top horn only.</li>
+<li>Slide motor 2 in from the top and fasten with four M2×6 screws.</li>
+<li>Attach the upper arm with four M3×6 screws on each side.</li>
+</ul>
+</div></li>
+<li><div>
+<h3>Joint 3: elbow (motor 3)</h3>
+<p><a href="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/lerobot/Joint3_v2.mp4">Watch the Joint 3 video</a></p>
+<ul>
+<li>Fit both horns; M3×6 screw in the top horn only.</li>
+<li>Insert motor 3 and fasten with four M2×6 screws.</li>
+<li>Connect the forearm to motor 3 with four M3×6 screws on each side.</li>
+</ul>
+</div></li>
+<li><div>
+<h3>Joint 4: wrist flex (motor 4)</h3>
+<p><a href="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/lerobot/Joint4_v2.mp4">Watch the Joint 4 video</a></p>
+<ul>
+<li>Fit both horns; M3×6 screw in the top horn only.</li>
+<li>Slide motor holder 4 over, then slide in motor 4.</li>
+<li>Fasten with four M2×6 screws.</li>
+</ul>
+</div></li>
+<li><div>
+<h3>Joint 5: wrist roll (motor 5)</h3>
+<p><a href="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/lerobot/Joint5_v2.mp4">Watch the Joint 5 video</a></p>
+<ul>
+<li>Insert motor 5 into the wrist holder and secure with two M2×6 screws from the front.</li>
+<li>Fit <strong>only one</strong> horn on this motor and secure it with an M3×6 screw.</li>
+<li>Secure the wrist to motor 4 with four M3×6 screws on both sides.</li>
+</ul>
+</div></li>
+<li><div>
+<h3>Gripper (motor 6): follower only</h3>
+<p><a href="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/lerobot/Gripper_v2.mp4">Watch the Gripper video</a></p>
+<ul>
+<li>Attach the gripper body to the horn on motor 5 with four M3×6 screws.</li>
+<li>Insert the gripper motor and secure with two M2×6 screws on each side.</li>
+<li>Fit both horns on it; M3×6 screw in the top horn only.</li>
+<li>Install the moving claw with four M3×6 screws on both sides.</li>
+</ul>
+</div></li>
+<li><div>
+<h3>Wire it up</h3>
+<p>Connect the motors in a chain with the 3-wire cables: motor 6 → 5 → 4 → 3 → 2 → 1, and finally motor 1 to the control board. Each motor has two identical sockets, so one cable comes in and one goes out. Attach the control board to the base of the arm.</p>
+<p>Before closing anything up, move every joint by hand through its whole range and watch the cables. None should be pulled tight, sharply bent or caught in a joint.</p>
+</div></li>
+</ol>
+
+<div class="box why"><span class="tag">Why a chain and not six separate cables?</span>
+<p>Six cables running from the base to each motor would form a thick bundle that fights every movement. With a chain, each segment of the arm carries one short cable to its neighbour. It works because the motors share the wires as a bus and are addressed by ID, which is exactly why you set the IDs first.</p></div>
+
+<h2>Build the leader</h2>
+<p>Repeat joints 1 to 5 exactly as above with the <span class="leader">leader</span> motors L1–L5. Check each label twice: the leader's motors differ inside.</p>
+<div class="tablewrap"><table>
+<tr><th>Leader joint</th><th>Motor label</th><th>Code on the motor</th><th>Gear ratio</th></tr>
+<tr><td>1 shoulder pan</td><td>L1</td><td><code>C044</code></td><td class="num">1/191</td></tr>
+<tr><td>2 shoulder lift</td><td>L2</td><td><code>C001</code></td><td class="num">1/345</td></tr>
+<tr><td>3 elbow flex</td><td>L3</td><td><code>C044</code></td><td class="num">1/191</td></tr>
+<tr><td>4 wrist flex</td><td>L4</td><td><code>C046</code></td><td class="num">1/147</td></tr>
+<tr><td>5 wrist roll</td><td>L5</td><td><code>C046</code></td><td class="num">1/147</td></tr>
+<tr><td>6 gripper (trigger)</td><td>L6</td><td><code>C046</code></td><td class="num">1/147</td></tr>
+</table></div>
+<p>Then, in place of the gripper, build the handle:</p>
+<ol class="steps">
+<li><div>
+<h3>Handle and trigger (motor 6): leader only</h3>
+<p><a href="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/lerobot/Leader_v2.mp4">Watch the Leader handle video</a></p>
+<ul>
+<li>Mount the leader holder onto the wrist with four M3×6 screws.</li>
+<li>Attach the handle to the leader holder with one M2×6 screw.</li>
+<li>Insert the gripper motor, secure with two M2×6 screws on each side, and fix one horn with an M3×6 screw.</li>
+<li>Attach the trigger with four M3×6 screws.</li>
+</ul>
+<p>Wire the leader in the same chain, 6 → 1 → board.</p>
+</div></li>
+</ol>
+
+<h2>Clamp both arms to the table</h2>
+<p>Use the table clamps to fix each base to the table edge, with the two arms side by side and far enough apart that they cannot touch each other at full stretch. Put the leader on the side of your writing hand.</p>
+<div class="box why"><span class="tag">Why clamp?</span>
+<p>When the arm stretches forward, its weight is far from the base, and the base wants to tip, like holding a heavy bag at arm's length. The clamp also keeps the base in exactly the same place from day to day, which matters later: a policy learns where things are <em>relative to the robot's base and the cameras</em>. Move the base and yesterday's training no longer matches today's world.</p></div>
+
+<h2>Final check before power</h2>
+<ul class="checks">
+<li><label><input type="checkbox"><span>Each joint moves smoothly by hand, with no grinding and no cable snagging</span></label></li>
+<li><label><input type="checkbox"><span>All cables are pushed fully in; the chain reaches from motor 6 to the board</span></label></li>
+<li><label><input type="checkbox"><span>Both arms are clamped</span></label></li>
+<li><label><input type="checkbox"><span>The <span class="leader">leader</span> has the <strong>5V</strong> supply next to it; a 12V supply (if you have one) is next to the <span class="follower">follower</span> only</span></label></li>
+</ul>
+
+<div class="quiz">
+<p class="q">You finish the leader and notice the elbow feels much stiffer than the wrist. Is something wrong?</p>
+<div class="opts">
+<button data-ok data-fb="The elbow uses a 1/191 gearbox and the wrist 1/147. A higher ratio is harder to turn by hand, so some difference is expected. The shoulder lift (1/345) is stiffest of all.">Probably not: the joints have different gear ratios, so they feel different.</button>
+<button data-fb="Different stiffness between joints is by design on the leader.">Yes, all leader joints should feel identical.</button>
+<button data-fb="The arm is unpowered during assembly, so the motors are not holding anything.">Yes, the motor must be powered and fighting you.</button>
+</div></div>
+
+</div></main>
+<script src="assets/glossary.js"></script>
+<script src="assets/site.js"></script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>

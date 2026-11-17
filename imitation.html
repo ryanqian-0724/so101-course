@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Policies, imitation and ACT · SO-101 from zero</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body data-page="imitation">
+<main><div class="col">
+
+<p class="kicker">Chapter 10 · Ideas</p>
+<h1>Policies, imitation and ACT</h1>
+<p class="lede">Now join the last two idea chapters together: a robot described by numbers, and a network that learns from examples. This chapter explains what your robot will actually be running, and the two classic ways it goes wrong.</p>
+<div class="meta"><span>30 minutes</span><span>3 interactive demos</span></div>
+
+<h2>A policy is a function</h2>
+<p>A <dfn data-g="policy">policy</dfn> maps what the robot senses to what it should do:</p>
+<div class="tablewrap"><table>
+<tr><th></th><th>What it is on your SO-101</th><th>Name in the dataset</th></tr>
+<tr><td><dfn data-g="observation">Observation</dfn></td><td>The camera pictures, plus the follower's six measured joint values</td><td><code>observation.images.top</code>, <code>observation.state</code></td></tr>
+<tr><td><dfn data-g="action">Action</dfn></td><td>Six target joint values to send to the follower</td><td><code>action</code></td></tr>
+</table></div>
+<p>The policy never controls electricity. It outputs six target positions about 30 times a second, and each servo's own feedback loop (<a href="robot-basics.html">chapter 2</a>) does the work of getting there.</p>
+<div class="box analogy"><span class="tag">Analogy</span><p>The servo is cruise control: you set a speed and the car works out the throttle. The policy is the driver, deciding which speed to set next.</p></div>
+
+<h3>Why not write the policy by hand?</h3>
+<p>You could program a robot classically: detect the cube with image-processing code, calculate the joint angles that put the gripper there (a calculation called <em>inverse kinematics</em>), and move. Factories do this. It needs precise measurements and an environment that never changes, and it needs a new program for every new object. A learned policy replaces all that hand-written logic with a network fitted to examples.</p>
+
+<h2>Behaviour cloning: learning by copying</h2>
+<p>The simplest way to learn a policy is <dfn data-g="imitation">behaviour cloning</dfn>. Your recorded dataset is a long list of pairs:</p>
+<pre class="nocopy"><code>what the robot sensed at this moment   →   what the human did at this moment
+(observation)                               (action)</code></pre>
+<p>Train a network to predict the right-hand side from the left-hand side, using gradient descent exactly as in <a href="learning.html">chapter 9</a>. The loss is the gap between the network's predicted action and the action you actually demonstrated. That is the whole method.</p>
+<p>It is remarkably effective, and it has two famous weaknesses. Understanding them explains nearly every design choice in modern robot learning, and nearly every piece of advice about recording data.</p>
+
+<h2>Weakness 1: small errors snowball</h2>
+<p>No trained network is perfect; each prediction is slightly off. In a normal prediction task that is harmless. For a robot it is not, because <strong>each action changes what the robot sees next</strong>.</p>
+<p>A slightly wrong action moves the arm to a slightly unusual position. The network was only trained on positions that appear in your demonstrations, and you, being skilled, never went to unusual positions. So in this unfamiliar spot its next guess is worse, which takes the arm somewhere even less familiar. The error feeds itself. Researchers call this <strong>compounding error</strong> or <em>distribution shift</em>.</p>
+
+<div class="widget" data-widget="drift">
+<div class="wtitle"><span>Try it: watch errors compound</span><span>each line is one run of the policy</span></div>
+<p class="caption">The shaded band is the set of situations covered by the demonstrations. With "Only perfect demos", most runs wander out of the band and then get rapidly worse (red). Switch to "Demos include recoveries": now the policy has seen what to do when slightly off course, and it steers back. Same policy error per step, completely different result.</p>
+</div>
+
+<div class="box why"><span class="tag">What this means for your recording</span>
+<p>Fifty flawless, identical demonstrations are <em>worse</em> than fifty demonstrations that start from slightly different poses and approach the object from slightly different angles. Variety widens the band. A demonstration where you drift a little and correct smoothly is not a mistake to delete: it teaches recovery.</p></div>
+
+<h2>Weakness 2: averaging two good answers gives a bad one</h2>
+<p>People do the same task in different ways. One demonstration passes an obstacle on the left, another on the right. Both are correct. A network trained to minimise its average error will predict the middle of the two, and the middle goes straight into the obstacle.</p>
+
+<div class="widget" data-widget="modes">
+<div class="wtitle"><span>Try it: the averaging trap</span></div>
+<p class="caption">Press "Average all demos". The result is a path that nobody demonstrated and that crashes. Then press "Copy one style of demo" a few times. The fix is not to average but to commit to one of the valid options.</p>
+</div>
+<p>This is called <strong>multimodality</strong> ("multi-mode": more than one typical way). Real demonstrations are full of it: which side to approach from, when to pause, how fast to move.</p>
+<div class="box why"><span class="tag">What this means for your recording</span>
+<p>Be consistent. Pick one way of grasping the object and use it in every episode. The LeRobot docs say to "maintain consistent grasping behavior throughout the recordings". Note the difference from the previous point: vary the <em>situation</em> (where things are), keep your <em>strategy</em> the same.</p></div>
+
+<h2>ACT: the policy you will train</h2>
+<p>ACT stands for <strong>Action Chunking with Transformers</strong>. It was published in 2023 by researchers at Stanford, UC Berkeley and Meta, who used it to make low-cost arms do fiddly tasks such as opening a small cup or slotting in a battery, from about 50 demonstrations each. The LeRobot docs call ACT "the first model we recommend when you're starting out".</p>
+<p>ACT answers both weaknesses with two ideas.</p>
+
+<h3>Idea 1: predict a chunk of actions, not one</h3>
+<p>A plain policy looks, outputs one action, looks again, outputs one action. ACT looks once and outputs a whole short sequence of future actions, a <dfn data-g="chunk">chunk</dfn>. The original paper predicted 100 actions at a time.</p>
+<p>Why this helps with snowballing: errors compound once per <em>decision</em>. If one decision covers 100 steps, there are 100 times fewer decisions in a task, so far fewer chances for the error to feed on itself. In the paper's own experiment, success rose from 1% with chunk size 1 to 44% with chunk size 100 on one task.</p>
+<p>Chunks also capture things a single step cannot, like "pause here for a moment, then continue". A one-step policy looking at a paused arm cannot tell whether the pause has just started or is about to end.</p>
+<div class="box analogy"><span class="tag">Analogy</span><p>A pianist does not decide one note, play it, then decide the next. They read ahead and play a whole phrase as a unit. The ACT authors borrowed the word "chunking" from the psychology of how humans group movements.</p></div>
+
+<h3>Idea 2: smooth the joins</h3>
+<p>Played back to back, chunks can jerk where one ends and the next begins. ACT's paper proposes <strong>temporal ensembling</strong>: ask for a new chunk at every step, so that many overlapping chunks each contain a prediction for the present moment, and blend those predictions.</p>
+
+<div class="widget" data-widget="chunking">
+<div class="wtitle"><span>Try it: chunk size and smoothing</span><span>one joint's position over time</span></div>
+<p class="caption">Chunk size 1: a fresh, slightly different guess every step makes the line jitter. Chunk size 40: smooth stretches with a visible jump at each handover. Now turn on temporal ensembling: the jumps disappear, but look at how many times the network had to be asked. Smoothness is paid for with computing.</p>
+</div>
+
+<h3>Idea 3: a "style" input to escape the averaging trap</h3>
+<p>To deal with different demonstration styles, ACT is trained with an extra hidden input, often written <em>z</em>, that summarises the style of the particular demonstration being imitated ("this was a go-left one"). The network learns to produce the chunk that matches the style it is told, so it no longer has to average styles together. When the robot runs, <em>z</em> is simply set to its middle value, and the policy commits to one typical style. The technical name for this arrangement is a <em>conditional variational autoencoder</em>.</p>
+
+<h3>What is inside ACT</h3>
+<figure class="figure">
+<svg viewBox="0 0 700 190" width="700" role="img" aria-label="ACT: camera images pass through an image encoder, joint angles are added, a transformer outputs a chunk of future actions">
+  <g font-family="Inter, sans-serif" font-size="12.5" text-anchor="middle">
+    <rect x="8" y="18" width="130" height="52" rx="8" fill="var(--follower-soft)"/><text x="73" y="40" fill="var(--ink)" font-weight="600">camera images</text><text x="73" y="57" fill="var(--muted)">640×480 pixels</text>
+    <rect x="8" y="112" width="130" height="52" rx="8" fill="var(--follower-soft)"/><text x="73" y="134" fill="var(--ink)" font-weight="600">joint values</text><text x="73" y="151" fill="var(--muted)">6 numbers</text>
+    <rect x="188" y="18" width="130" height="52" rx="8" fill="var(--surface)" stroke="var(--line)" stroke-width="2"/><text x="253" y="40" fill="var(--ink)" font-weight="600">image encoder</text><text x="253" y="57" fill="var(--muted)">ResNet-18 (a CNN)</text>
+    <rect x="368" y="50" width="150" height="82" rx="8" fill="var(--ink)"/><text x="443" y="86" fill="var(--bg)" font-weight="700" font-size="15" font-family="Space Grotesk, sans-serif">Transformer</text><text x="443" y="106" fill="var(--bg)">combines everything</text>
+    <rect x="568" y="50" width="124" height="82" rx="8" fill="var(--leader-soft)"/><text x="630" y="80" fill="var(--ink)" font-weight="600">action chunk</text><text x="630" y="98" fill="var(--muted)">the next ~100</text><text x="630" y="114" fill="var(--muted)">sets of 6 targets</text>
+    <g stroke="var(--muted)" stroke-width="2" fill="none"><path d="M140 44h44M320 44c24 0 20 30 44 34M140 138c110 0 150-26 224-34M520 91h44"/></g>
+    <g fill="var(--muted)"><path d="M186 44l-8-5v10zM366 80l-9-2 4 9zM366 103l-9 1 5 8zM566 91l-8-5v10z"/></g>
+  </g>
+</svg>
+<figcaption>About 80 million parameters in total, small by today's standards. It trains from scratch on your data alone.</figcaption>
+</figure>
+
+<div class="tablewrap"><table>
+<tr><th>Fact about ACT</th><th>Value</th><th>Source</th></tr>
+<tr><td>Size</td><td>About 80 million parameters</td><td>ACT paper</td></tr>
+<tr><td>Demonstrations used per task</td><td>50</td><td>ACT paper</td></tr>
+<tr><td>Chunk size in the paper</td><td>100 actions, at 50 actions per second (2 seconds ahead)</td><td>ACT paper</td></tr>
+<tr><td>Time for one decision</td><td>About 0.01 s on a 2018 gaming GPU</td><td>ACT paper</td></tr>
+<tr><td>GPU memory to train</td><td>About 2–6 GB</td><td>LeRobot hardware guide</td></tr>
+<tr><td>Understands language instructions?</td><td>No. One trained ACT policy does one task</td><td>LeRobot docs</td></tr>
+</table></div>
+
+<div class="box idea"><span class="tag">What ACT cannot do</span>
+<p>ACT has no idea what a "cube" is and cannot be told what to do in words. It has learned a connection between pixel patterns and arm motions for one task in one setting. Change the lighting, the camera, the object or the background and it may fail, because those pixel patterns are new to it. Models that try to overcome this by starting with broad knowledge are the subject of <a href="frontier.html">chapter 14</a>.</p></div>
+
+<div class="quiz">
+<p class="q">Why does predicting 100 actions at once reduce compounding errors?</p>
+<div class="opts">
+<button data-fb="Each individual prediction is not more accurate. The benefit comes from making fewer decisions.">Because each predicted action is more accurate.</button>
+<button data-ok data-fb="Errors feed on themselves once per decision. One decision per 100 steps means 100 times fewer opportunities for drift.">Because the policy makes far fewer separate decisions during a task.</button>
+<button data-fb="Chunking does not change the motors.">Because the motors move more slowly.</button>
+</div></div>
+
+<div class="quiz">
+<p class="q">Which set of 50 demonstrations is likely to give the most reliable policy?</p>
+<div class="opts">
+<button data-fb="With zero variety the policy can ignore the camera and memorise one motion. It will fail the moment the cube is somewhere else.">The cube always in exactly the same place, picked up the same way.</button>
+<button data-ok data-fb="Varying the situation teaches the policy to look and widens the range it can handle; a consistent strategy avoids the averaging trap. This matches the official advice: 10 episodes at each of 5 positions.">The cube in several different places, always picked up with the same grasp.</button>
+<button data-fb="Mixing strategies creates multimodal data, which invites the averaging trap.">The cube in the same place, but picked up a different way every time.</button>
+</div></div>
+
+</div></main>
+<script src="assets/glossary.js"></script>
+<script src="assets/site.js"></script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>

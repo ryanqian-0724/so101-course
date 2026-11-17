@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>How a robot arm works · SO-101 from zero</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body data-page="robot-basics">
+<main><div class="col">
+
+<p class="kicker">Chapter 2 · Ideas</p>
+<h1>How a robot arm works</h1>
+<p class="lede">An arm is six motors in a chain. Understand one motor and how they are chained, and nothing later in the course will feel like magic.</p>
+<div class="meta"><span>20 minutes</span><span>3 interactive demos</span></div>
+
+<h2>Joints: the arm is a chain</h2>
+<p>Your own arm bends at the shoulder, elbow and wrist. Each place it bends is a <dfn data-g="joint">joint</dfn>. The SO-101 has five joints plus a gripper, and each one is turned by its own motor. LeRobot gives them these names, and you will see them in every data file:</p>
+<div class="tablewrap"><table>
+<tr><th>Motor ID</th><th>Name in LeRobot</th><th>What it does</th><th>Your body's version</th></tr>
+<tr><td class="num">1</td><td><code>shoulder_pan</code></td><td>Swings the whole arm left and right</td><td>Turning at the waist</td></tr>
+<tr><td class="num">2</td><td><code>shoulder_lift</code></td><td>Raises and lowers the upper arm</td><td>Shoulder</td></tr>
+<tr><td class="num">3</td><td><code>elbow_flex</code></td><td>Bends the elbow</td><td>Elbow</td></tr>
+<tr><td class="num">4</td><td><code>wrist_flex</code></td><td>Tilts the hand up and down</td><td>Wrist nodding</td></tr>
+<tr><td class="num">5</td><td><code>wrist_roll</code></td><td>Twists the hand</td><td>Turning a door handle</td></tr>
+<tr><td class="num">6</td><td><code>gripper</code></td><td>Opens and closes the jaws</td><td>Thumb and finger pinching</td></tr>
+</table></div>
+<p>The number of independent ways a robot can move is its <dfn data-g="dof">degrees of freedom</dfn> (DOF). The SO-101 is described as "5+1": five for positioning the hand, one for the gripper.</p>
+
+<div class="widget" data-widget="arm">
+<div class="wtitle"><span>Try it: move each joint</span><span>simplified side view</span></div>
+<p class="caption">Move the sliders. Notice that <strong>six numbers completely describe the arm's pose</strong>. That list of six numbers is what LeRobot calls the robot's <em>state</em>, and it is exactly what gets recorded and what a policy outputs. Also notice that moving the shoulder moves everything after it: joints are chained.</p>
+</div>
+
+<div class="box idea"><span class="tag">Key idea</span>
+<p>To a computer, "where is the arm?" and "where should the arm go?" are both just a list of six numbers. Everything in this course (recording, training, running a policy) is about reading or writing that list.</p></div>
+
+<h2>Inside one motor: the servo</h2>
+<p>The motors in your kit are not simple spinning motors like in a fan. Each is a <dfn data-g="servo">servo</dfn> (model Feetech STS3215): a small box that contains four things working together.</p>
+<div class="cards">
+<div><h3>1. Electric motor</h3><p class="small">Spins very fast but is weak, like a tiny fan motor.</p></div>
+<div><h3>2. Gearbox</h3><p class="small">Metal gears that trade speed for strength. A ratio of 1/345 means the motor spins 345 times for one turn of the output.</p></div>
+<div><h3>3. Encoder</h3><p class="small">A magnetic sensor that measures the output angle as a number from 0 to 4095 (4096 steps per full turn, about 0.09° each).</p></div>
+<div><h3>4. Controller chip</h3><p class="small">A tiny computer that compares "where am I?" with "where was I told to be?" and powers the motor to close the gap.</p></div>
+</div>
+<p>So when the computer says "joint 3, go to 80°", it does not control electricity directly. It sends a <em>goal</em>, and the servo's own chip does the work of getting there and holding the position, even if something pushes on it.</p>
+
+<div class="box why"><span class="tag">Why gears?</span>
+<p>Power is roughly speed × turning force (<dfn data-g="torque">torque</dfn>). A small motor has plenty of speed and little torque. Gears swap one for the other, the same way a low gear on a bicycle lets you climb a hill slowly. The 1/345 gearbox turns a weak, fast spin into a slow, strong one that can lift the arm.</p></div>
+
+<h3>How the servo reaches its target: feedback</h3>
+<p>The controller chip repeats one simple loop over and over, far faster than you can see: measure the angle, compute the <em>error</em> (target minus actual), push harder the bigger the error is. This is called <strong>feedback control</strong>. Two settings shape the behaviour:</p>
+<ul>
+<li><strong>P (proportional) gain:</strong> how hard to push per degree of error. Too low and the motor is lazy; too high and it overshoots and shakes.</li>
+<li><strong>D (derivative) gain:</strong> a brake that grows with speed, which calms the overshoot.</li>
+</ul>
+
+<div class="widget" data-widget="pcontrol">
+<div class="wtitle"><span>Try it: tune a servo</span><span>target jumps to 60°, then to 20°</span></div>
+<p class="caption">Set P high and D to zero: the motor shoots past the target and wobbles. That is exactly what a "jittery" arm is. Now switch on the weight: with a low P gain the motor sags below its target, because it needs some error before it pushes hard enough to hold the load. LeRobot sets these gains for you, but now you know what is happening when an arm shakes or droops.</p>
+</div>
+
+<h2>Leader and follower</h2>
+<p>Both arms have the same shape and the same six joints, but they do opposite jobs.</p>
+<div class="tablewrap"><table>
+<tr><th></th><th><span class="leader">Leader</span></th><th><span class="follower">Follower</span></th></tr>
+<tr><td>Job</td><td>You move it by hand. Its motors are used only as <em>sensors</em>.</td><td>Its motors actively drive it to copy the leader.</td></tr>
+<tr><td>End of the arm</td><td>A handle with a trigger</td><td>A gripper with two jaws</td></tr>
+<tr><td>Gears</td><td>Mixed: 1/191, 1/345, 1/191, 1/147, 1/147, 1/147 (joints 1–6)</td><td>All six are 1/345</td></tr>
+<tr><td>Name in commands</td><td><code>so101_leader</code> (a "teleoperator")</td><td><code>so101_follower</code> (a "robot")</td></tr>
+</table></div>
+
+<div class="box why"><span class="tag">Why does the leader have different gears?</span>
+<p>Try turning a high-ratio gearbox backwards by hand: it feels stiff, because you are spinning the little motor 345 times per turn. A leader arm like that would be tiring to move. So the leader uses lighter gearing (1/147 and 1/191) on most joints so it moves easily in your hand. The shoulder lift keeps 1/345 because that joint carries the whole arm's weight, and the extra friction stops it from flopping down. In the words of the official docs, the mix lets the leader "both sustain its own weight" and "be moved without requiring much force".</p></div>
+
+<h2>The control loop</h2>
+<p>Teleoperation is a loop that the computer runs again and again:</p>
+<ol>
+<li>Read the six encoder values from the <span class="leader">leader</span>.</li>
+<li>Send them as goal positions to the six <span class="follower">follower</span> servos.</li>
+<li>Wait a moment, then repeat.</li>
+</ol>
+<p>How often the loop repeats per second is the <dfn data-g="hz">control frequency</dfn>, measured in hertz (Hz). LeRobot's default is 30 Hz, the same as the camera's 30 frames per second.</p>
+
+<div class="widget" data-widget="arm" data-mode="teleop">
+<div class="wtitle"><span>Try it: teleoperation in slow motion</span><span>simulation</span></div>
+<p class="caption">Drop the loop rate to 2 Hz. The follower now moves in jerks, because it only hears a new goal twice per second (the dashed ghost shows the last goal it was sent). At 30 Hz the steps are too small to see. The follower is also always slightly behind, because a motor cannot move instantly. Keep this picture in mind: when a policy drives the robot later, it replaces the leader in this exact loop.</p>
+</div>
+
+<h2>How the computer talks to six motors</h2>
+<p>Each arm has one small circuit board, the <strong>motor control board</strong> (also called a bus servo adapter). It connects to your computer with a USB-C cable and to a power supply with a separate plug. The six servos are not wired to the board individually. They are <em>daisy-chained</em>: board → motor 1 → motor 2 → … → motor 6, each link a short 3-wire cable.</p>
+<p>All six motors share those same wires, which is called a <dfn data-g="bus">bus</dfn>. To avoid everyone talking at once, each servo has an <strong>ID number</strong> (1 to 6). The computer says "ID 3, report your angle", and only motor 3 answers.</p>
+<div class="box analogy"><span class="tag">Analogy</span>
+<p>A bus is like a classroom with one teacher. The teacher calls a student by name, and only that student answers. If two students have the same name, both answer at once and nobody understands. That is why chapter 5 exists: brand-new motors all come with ID 1, and you must give each a unique ID before chaining them.</p></div>
+<div class="box warn"><span class="tag">Remember</span>
+<p>USB carries only <em>data</em> to the arm. The motors get their power from the separate power supply. Both must be plugged in for anything to move.</p></div>
+
+<div class="quiz">
+<p class="q">The follower arm is holding a pose. You gently push it and it pushes back. Why?</p>
+<div class="opts">
+<button data-fb="The computer sends goals only about 30 times a second; the fast reaction comes from inside the servo.">The computer notices and sends a new command.</button>
+<button data-ok data-fb="Each servo's own controller constantly measures its angle and powers the motor to remove any error. Feedback control happens inside the motor.">The servo's built-in controller sees the angle error and powers the motor to correct it.</button>
+<button data-fb="Gears add friction, but the active push-back you feel is the motor being powered.">The gears are simply too stiff to move.</button>
+</div></div>
+
+<div class="quiz">
+<p class="q">Why must every motor on one arm have a different ID?</p>
+<div class="opts">
+<button data-ok data-fb="All motors share the same wires. The ID is the only way to address one motor without the others answering too.">They share one set of wires, so the ID is how the computer talks to one at a time.</button>
+<button data-fb="The ID does not change strength; the gear ratio and voltage do.">Higher IDs make the motor stronger.</button>
+<button data-fb="The ID is stored inside the motor and has nothing to do with the order of plugging in USB.">So that the USB cable knows which arm is which.</button>
+</div></div>
+
+</div></main>
+<script src="assets/glossary.js"></script>
+<script src="assets/site.js"></script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>

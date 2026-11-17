@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Teleoperate and add cameras · SO-101 from zero</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body data-page="teleop">
+<main><div class="col">
+
+<p class="kicker">Chapter 8 · Hands-on</p>
+<h1>Teleoperate and add cameras</h1>
+<p class="lede">The moment it comes alive: you move the leader and the follower copies you. Then you give the robot eyes.</p>
+<div class="meta"><span>30–45 minutes</span><span>You need: both arms calibrated, one or two USB cameras</span></div>
+
+<h2>Part A: first movement</h2>
+<ol class="steps">
+<li><div>
+<h3>Get ready</h3>
+<p>Both arms clamped, powered and plugged in by USB. Clear the table around the follower. Hold the leader in roughly the same pose as the follower before you start, so the follower does not jump.</p>
+</div></li>
+<li><div>
+<h3>Run teleoperation</h3>
+<div class="tabs" data-group="os">
+<section data-label="Windows"><pre><code>lerobot-teleoperate --robot.type=so101_follower --robot.port=COM5 --robot.id=my_follower_arm --teleop.type=so101_leader --teleop.port=COM6 --teleop.id=my_leader_arm</code></pre></section>
+<section data-label="macOS / Linux"><pre><code>lerobot-teleoperate \
+    --robot.type=so101_follower \
+    --robot.port=/dev/ttyACM0 \
+    --robot.id=my_follower_arm \
+    --teleop.type=so101_leader \
+    --teleop.port=/dev/ttyACM1 \
+    --teleop.id=my_leader_arm</code></pre></section>
+</div>
+<div class="dissect"><div class="line">
+<span class="part" data-info="Runs the control loop from chapter 2: read the leader, command the follower, repeat.">lerobot-teleoperate</span>
+<span class="part" data-info="The three --robot options describe the arm that does the work: its design, its port, and its calibration name.">--robot.type … --robot.port … --robot.id …</span>
+<span class="part" data-info="The three --teleop options describe the device you steer with: the leader arm's design, port and calibration name.">--teleop.type … --teleop.port … --teleop.id …</span>
+</div></div>
+</div></li>
+<li><div>
+<h3>Move the leader</h3>
+<p>Move slowly at first. The follower should mirror every joint, including the gripper when you squeeze the trigger. Stop with <kbd>Ctrl</kbd>+<kbd>C</kbd> in the terminal.</p>
+<div class="box warn"><span class="tag">When you stop, the arm goes limp</span><p>Stopping the program releases the motors and the follower sinks under its own weight. Lower it onto the table before pressing <kbd>Ctrl</kbd>+<kbd>C</kbd>, or hold it.</p></div>
+</div></li>
+</ol>
+
+<div class="box idea"><span class="tag">What just happened</span>
+<p>About 30 times per second the program read six calibrated joint values from the leader and sent them as goals to the follower. The follower's servos did the rest with their internal feedback loops. You are, right now, the robot's <dfn data-g="policy">policy</dfn>: your eyes observe, your brain decides, your hand outputs six numbers. Training will replace <em>you</em> in this loop and keep everything else the same.</p></div>
+
+<h3>If it does not behave</h3>
+<div class="tablewrap"><table>
+<tr><th>Symptom</th><th>Likely cause</th><th>Fix</th></tr>
+<tr><td>Follower does the opposite, or one joint is offset</td><td>Calibration of one arm was off</td><td>Recalibrate both arms (<a href="calibrate.html">chapter 7</a>), taking care with the middle pose</td></tr>
+<tr><td>The wrong arm moves, or nothing moves</td><td>The two ports are swapped</td><td>Swap the port values in the command, or rerun <code>lerobot-find-port</code></td></tr>
+<tr><td>One leader joint feels wrong and its follower joint moves oddly fast or slow</td><td>A leader motor with the wrong gearing is in that joint</td><td>Check the code on that motor against the table in <a href="assembly.html">chapter 6</a></td></tr>
+<tr><td>Follower shakes while holding still</td><td>Loose screws or a joint under strain</td><td>Power off, tighten horn screws, check nothing is rubbing</td></tr>
+</table></div>
+
+<h2>Part B: cameras</h2>
+<p>So far the robot has only <dfn data-g="proprioception">proprioception</dfn>: it knows its own joint angles. It has no idea where the object is. Cameras fix that.</p>
+
+<h3>Where to put them</h3>
+<p>The official tutorial uses two cameras: one looking down or forward at the workspace (named <code>top</code> or <code>front</code>), and one mounted on the follower's wrist (named <code>wrist</code>). One fixed camera is enough to begin.</p>
+<div class="box why"><span class="tag">The rule that decides everything</span>
+<p>The docs give one test: <em>"could you do the task yourself by only looking at the camera images?"</em> The policy has no other information about the world. If the object is hidden behind the gripper in the picture, or too dark to see, the policy is blind to it no matter how well it is trained.</p></div>
+<ul>
+<li><strong>Fix cameras rigidly.</strong> Tape or clamp them. A camera that moves between recording and running the policy shows the policy a world it has never seen.</li>
+<li><strong>Light evenly.</strong> Use steady, diffuse light. Avoid direct sunlight and moving shadows; the docs note that "lighting matters more than resolution".</li>
+<li><strong>Keep the leader arm and people out of the picture.</strong> When the policy runs, the leader will not be there. Anything in the demonstrations that will be missing later can confuse it.</li>
+<li><strong>Modest resolution.</strong> 640×480 at 30 frames per second is the recommended setting. Bigger images slow down recording and training without helping most tasks.</li>
+</ul>
+
+<h3>Find your cameras</h3>
+<ol class="steps">
+<li><div>
+<p>Plug in the cameras and run:</p>
+<pre><code>lerobot-find-cameras opencv</code></pre>
+<pre class="out">--- Detected Cameras ---
+Camera #0:
+  Name: OpenCV Camera @ 0
+  Type: OpenCV
+  Id: 0
+  …
+Camera #1:
+  Name: OpenCV Camera @ 1
+  Id: 1</pre>
+<p>Each camera gets an index (0, 1, 2…). The program also saves one test photo from each camera into the folder <code>outputs/captured_images</code>. Open those photos to learn which index is which camera. A laptop's built-in webcam is usually one of them.</p>
+<div class="box warn"><span class="tag">Indexes can change</span><p>Unplugging a camera or restarting can reshuffle the numbers. If the pictures look swapped one day, run this command again.</p></div>
+</div></li>
+<li><div>
+<h3>Teleoperate with cameras and a live view</h3>
+<p>Add two options to the teleoperate command. Replace the index numbers with yours.</p>
+<div class="tabs" data-group="os">
+<section data-label="Windows"><pre><code>lerobot-teleoperate --robot.type=so101_follower --robot.port=COM5 --robot.id=my_follower_arm --robot.cameras="{ top: {type: opencv, index_or_path: 1, width: 640, height: 480, fps: 30}, wrist: {type: opencv, index_or_path: 0, width: 640, height: 480, fps: 30} }" --teleop.type=so101_leader --teleop.port=COM6 --teleop.id=my_leader_arm --display_data=true</code></pre></section>
+<section data-label="macOS / Linux"><pre><code>lerobot-teleoperate \
+    --robot.type=so101_follower \
+    --robot.port=/dev/ttyACM0 \
+    --robot.id=my_follower_arm \
+    --robot.cameras="{ top: {type: opencv, index_or_path: 1, width: 640, height: 480, fps: 30}, wrist: {type: opencv, index_or_path: 0, width: 640, height: 480, fps: 30} }" \
+    --teleop.type=so101_leader \
+    --teleop.port=/dev/ttyACM1 \
+    --teleop.id=my_leader_arm \
+    --display_data=true</code></pre></section>
+</div>
+<div class="dissect"><div class="line">
+--robot.cameras="{ <span class="part" data-info="A name you choose for this camera. It becomes part of the data: this camera's video is stored as observation.images.top. Use names that describe the position (top, front, wrist), and never change them later.">top:</span> {<span class="part" data-info="The kind of camera. opencv covers ordinary USB webcams, laptop cameras and phones used as webcams.">type: opencv,</span> <span class="part" data-info="Which camera: the index number you found with lerobot-find-cameras.">index_or_path: 1,</span> <span class="part" data-info="Picture size in pixels. 640 by 480 is the recommended size.">width: 640, height: 480,</span> <span class="part" data-info="Frames per second. 30 matches the robot's control loop, so every loop step has one fresh picture.">fps: 30</span>}, <span class="part" data-info="A second camera, described the same way. With one camera, leave this part out (and the comma before it).">wrist: {…}</span> }" <span class="part" data-info="Opens a viewer window (a program called Rerun) showing the live camera pictures and graphs of every joint.">--display_data=true</span>
+</div></div>
+<p>With only one camera, use <code>--robot.cameras="{ front: {type: opencv, index_or_path: 0, width: 640, height: 480, fps: 30} }"</code>.</p>
+</div></li>
+<li><div>
+<h3>Do the camera test</h3>
+<p>A viewer window opens. Put an object on the table and try to pick it up <strong>while looking only at the viewer window, not at the real robot</strong>. If that is hard, move the camera or improve the light until it is easy. This ten-minute test saves hours of wasted recording.</p>
+</div></li>
+</ol>
+
+<div class="box warn"><span class="tag">This camera setup is now frozen</span>
+<p>The docs are explicit: "A policy trained on this dataset expects the same camera names and resolution when you deploy it". Copy your exact <code>--robot.cameras="…"</code> text into a notes file. You will paste the identical text when recording and when running the policy.</p></div>
+
+<details class="more"><summary>No spare webcam? Use a phone</summary><div>
+<p>On a Mac, an iPhone signed in with the same Apple ID appears as a camera automatically (Continuity Camera; macOS 13+ and iOS 16+).</p>
+<p>On any other combination, the docs suggest the DroidCam app on the phone together with OBS Studio and its virtual camera on the computer, with the resolution set to 640×480 in both. It works but takes patience; a cheap USB webcam is simpler.</p>
+</div></details>
+
+<h3>Camera troubleshooting</h3>
+<div class="tablewrap"><table>
+<tr><th>Symptom</th><th>Fix</th></tr>
+<tr><td>Wrong picture under a camera name</td><td>Indexes changed. Rerun <code>lerobot-find-cameras opencv</code> and update the numbers</td></tr>
+<tr><td>Error that the frame width or height does not match</td><td>The camera cannot deliver 640×480. Use the width and height that <code>lerobot-find-cameras</code> reported for it</td></tr>
+<tr><td>macOS: black picture or no camera found</td><td>System Settings → Privacy &amp; Security → Camera: allow your Terminal app, then restart it</td></tr>
+<tr><td>Two cameras work alone but not together</td><td>Plug them into different USB sockets on the computer, not the same hub. Two identical camera models can also confuse the system; mixing brands avoids it</td></tr>
+<tr><td>Movement feels laggy with cameras on</td><td>Lower the resolution, or close other programs using the cameras</td></tr>
+</table></div>
+
+<div class="quiz">
+<p class="q">You record demonstrations with the camera on a tripod, then someone bumps the tripod before you run the trained policy. What is the likely result?</p>
+<div class="opts">
+<button data-fb="The policy only knows pixels. It has no concept of 'the camera moved'.">Nothing: the policy understands the camera moved.</button>
+<button data-ok data-fb="The policy learned 'when the object appears HERE in the picture, move THERE'. With a shifted camera the object appears in a different place in the picture, so the policy reaches for the wrong spot.">The policy reaches for the wrong place, because everything appears shifted in its picture.</button>
+<button data-fb="The software does not check camera position.">LeRobot refuses to start.</button>
+</div></div>
+
+</div></main>
+<script src="assets/glossary.js"></script>
+<script src="assets/site.js"></script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>

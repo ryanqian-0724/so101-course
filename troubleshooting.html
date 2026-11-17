@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Troubleshooting · SO-101 from zero</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body data-page="troubleshooting">
+<main><div class="col">
+
+<p class="kicker">Reference</p>
+<h1>Troubleshooting</h1>
+<p class="lede">Things go wrong for everyone. Find your symptom, read the cause, try the fix. Use your browser's search (<kbd>Ctrl</kbd>+<kbd>F</kbd>) to look for the words in your error message.</p>
+
+<div class="box idea"><span class="tag">Five checks that solve half of all problems</span>
+<ol>
+<li>Does the prompt show <code>(lerobot)</code>? If not: <code>conda activate lerobot</code>.</li>
+<li>Is the power supply plugged in at both ends, <em>and</em> the USB cable? USB does not power the motors.</li>
+<li>Has the port name changed? Run <code>lerobot-find-port</code> again.</li>
+<li>Are you using exactly the same <code>--robot.id</code>, <code>--teleop.id</code> and <code>--robot.cameras</code> text as before?</li>
+<li>Unplug the arm's power for five seconds and plug it back in. This clears most motor error states.</li>
+</ol></div>
+
+<p class="small">Fixes are marked by where they come from: <strong>Official</strong> = LeRobot documentation or maintainers; <strong>Vendor</strong> = the kit maker's guide; <strong>Community</strong> = reported by other builders and not confirmed officially.</p>
+
+<h2>Connection and ports</h2>
+<div class="tablewrap"><table>
+<tr><th>Symptom</th><th>Cause</th><th>Fix</th><th>Source</th></tr>
+<tr><td>Linux: <code>Could not connect on port</code> or <code>Permission denied: '/dev/ttyACM0'</code></td><td>Your user may not use the serial device</td><td><code>sudo chmod 666 /dev/ttyACM0</code> (needed again after replugging). Permanent: <code>sudo usermod -aG dialout $USER</code>, then log out and in</td><td>Official; permanent fix Community</td></tr>
+<tr><td>Windows: <code>lerobot-find-port</code> says no difference was found, or more than one port</td><td>Bluetooth and virtual COM ports confuse it</td><td>Open Device Manager → "Ports (COM &amp; LPT)". Unplug the arm and see which COM entry disappears; use that name</td><td>Official (method); known open issue</td></tr>
+<tr><td>Windows: no COM port appears at all</td><td>Charge-only USB cable, missing driver, or another program is using the port</td><td>Try a different USB-C cable that carries data. Close other programs that use serial ports. If the board shows under "Other devices", install the CH340/CH343 USB-serial driver</td><td>Community</td></tr>
+<tr><td>Port names swap between sessions</td><td>The system numbers boards in the order it finds them</td><td>Run <code>lerobot-find-port</code> at the start of each session</td><td>Vendor</td></tr>
+<tr><td>Port opens but no motor responds</td><td>Motors have no power, or (Waveshare board) jumpers are on <code>A</code></td><td>Plug in the power supply; set both jumpers to <code>B</code></td><td>Official</td></tr>
+</table></div>
+
+<h2>Motor ID setup</h2>
+<div class="tablewrap"><table>
+<tr><th>Symptom</th><th>Cause</th><th>Fix</th><th>Source</th></tr>
+<tr><td><code>Motor 'gripper' (model 'sts3215') was not found. Make sure it is connected.</code></td><td>Loose 3-wire cable, no power, or more than one motor connected</td><td>Connect exactly one motor directly to the board. Reseat the power plug, USB and motor cable. If every motor fails, suspect the power supply</td><td>Official</td></tr>
+<tr><td>A motor from another project does not respond</td><td>It has a different ID or baud rate</td><td>Run <code>lerobot-setup-motors</code> with only that motor connected</td><td>Official</td></tr>
+<tr><td>A leader joint is far too stiff, or flops down</td><td>A motor with the wrong gear ratio is in that joint</td><td>Check the code on the motor against the table in <a href="kit.html">chapter 3</a>; swapping means opening the joint</td><td>Official (table)</td></tr>
+</table></div>
+
+<h2>Calibration</h2>
+<div class="tablewrap"><table>
+<tr><th>Symptom</th><th>Cause</th><th>Fix</th><th>Source</th></tr>
+<tr><td><code>Magnitude 30841 exceeds 2047 (max for sign_bit_index=11)</code> (the first number varies)</td><td>A motor kept an out-of-range position count</td><td>Unplug power and USB for 5 seconds, reconnect, calibrate again</td><td>Vendor</td></tr>
+<tr><td>Right after calibrating, a joint drives hard to its end stop when the motors switch on</td><td>A known software issue where a motor keeps a one-turn offset</td><td>Power-cycle the arm after calibrating, before teleoperating</td><td>Community (open issue)</td></tr>
+<tr><td>Positions look wrong after a repair or on a different computer</td><td>An old calibration file is being reused</td><td>Recalibrate (type <code>c</code> when asked), or delete the <code>calibration</code> folder inside <code>.cache/huggingface/lerobot</code> in your user folder</td><td>Vendor</td></tr>
+<tr><td><code>Failed to sync read 'Present_Position' … There is no status packet!</code></td><td>A cable in the motor chain is loose, or power dropped</td><td>Reseat the 3-wire cables. A motor with its light off points to the cable just before it</td><td>Vendor</td></tr>
+</table></div>
+
+<h2>Teleoperation and motors</h2>
+<div class="tablewrap"><table>
+<tr><th>Symptom</th><th>Cause</th><th>Fix</th><th>Source</th></tr>
+<tr><td>Follower does not mirror the leader: a joint is reversed, offset, or stops short</td><td>Calibration started from a pose that was not centred, or a different id was used</td><td>Recalibrate both arms carefully, using the ids you teleoperate with</td><td>Official</td></tr>
+<tr><td>A joint goes limp or stiff and stops responding after being jammed</td><td>The servo's overload protection switched it off</td><td>Free the joint, then unplug and replug the arm's power</td><td>Community</td></tr>
+<tr><td><code>Input voltage error!</code></td><td>The power supply does not match the motors</td><td>5V supply for 7.4V motors, 12V supply for 12V motors. Stop and check before anything burns</td><td>Vendor</td></tr>
+<tr><td>Follower trembles while holding still</td><td>Loose horn screw, weak power supply, or a joint pressing against its end stop</td><td>Power off; tighten horn screws; make sure no joint is forced against a stop</td><td>Community</td></tr>
+<tr><td>Gripper motor gets hot</td><td>Squeezing an object hard for a long time</td><td>Close only as far as the object's width; rest the arm between runs</td><td>Community</td></tr>
+</table></div>
+
+<h2>Cameras</h2>
+<div class="tablewrap"><table>
+<tr><th>Symptom</th><th>Cause</th><th>Fix</th><th>Source</th></tr>
+<tr><td>The wrong camera opens</td><td>Index numbers changed after a restart or replug</td><td>Run <code>lerobot-find-cameras opencv</code> and update <code>index_or_path</code></td><td>Official</td></tr>
+<tr><td><code>frame width=… or height=… do not match configured width=… or height=…</code></td><td>The camera cannot deliver the size you asked for</td><td>Use a width and height the camera supports (shown by <code>lerobot-find-cameras</code>)</td><td>Official</td></tr>
+<tr><td>macOS: <code>OpenCV: not authorized to capture video</code>, or a black picture</td><td>The terminal app has no camera permission</td><td>System Settings → Privacy &amp; Security → Camera → allow Terminal, then restart it</td><td>Community</td></tr>
+<tr><td>Two cameras: one becomes very slow or drops out</td><td>Both share one USB connection's capacity</td><td>Plug cameras directly into separate USB sockets, not a hub. Keep 640×480</td><td>Vendor; open issue on Windows</td></tr>
+<tr><td>Recording runs below 30 Hz</td><td>Cameras or the live viewer are using too much processor time</td><td>Set <code>--display_data=false</code>; lower resolution; close other programs</td><td>Official</td></tr>
+</table></div>
+
+<h2>Recording and uploading</h2>
+<div class="tablewrap"><table>
+<tr><th>Symptom</th><th>Cause</th><th>Fix</th><th>Source</th></tr>
+<tr><td>Upload fails at the end of recording</td><td>Not logged in, or the token is read-only</td><td>Create a <em>Write</em> token and run <code>hf auth login</code> again. Your data is still on the computer</td><td>Official</td></tr>
+<tr><td>Error that the dataset name is invalid or starts with <code>/</code></td><td>The username part is empty</td><td>Type your username directly in <code>--dataset.repo_id=YOUR_NAME/…</code></td><td>Official</td></tr>
+<tr><td><code>FileExistsError</code> when recording</td><td>A dataset folder with that name already exists</td><td>Pick a new name, or add <code>--resume=true</code></td><td>Official</td></tr>
+<tr><td>Arrow keys do nothing while recording</td><td>The keyboard is not being read globally</td><td>Click on the terminal window and use <kbd>n</kbd>, <kbd>r</kbd>, <kbd>q</kbd></td><td>Official</td></tr>
+<tr><td>Video and motion do not line up after stopping with <kbd>Ctrl</kbd>+<kbd>C</kbd></td><td>Recording was cut off mid-save</td><td>Always stop recording with <kbd>Esc</kbd> or <kbd>q</kbd></td><td>Official (controls); open issue</td></tr>
+<tr><td>Training later cannot find the dataset</td><td>LeRobot added a date-and-time ending to the name</td><td>Look up the full name on your Hub profile, or record with <code>--dataset.no_stamp=true</code></td><td>Official</td></tr>
+</table></div>
+
+<h2>Video and ffmpeg</h2>
+<div class="tablewrap"><table>
+<tr><th>Symptom</th><th>Cause</th><th>Fix</th><th>Source</th></tr>
+<tr><td><code>No valid stream found in input file</code>, or the <code>libsvtav1</code> encoder is missing</td><td>The installed ffmpeg lacks a needed video encoder</td><td><code>conda install ffmpeg=7.1.1 -c conda-forge</code></td><td>Official</td></tr>
+<tr><td><code>Could not load this library: …torchcodec…</code></td><td>The video reader cannot find a matching ffmpeg</td><td>Install ffmpeg with conda as in <a href="setup.html">chapter 4</a>. Workaround: add <code>--dataset.video_backend=pyav</code> to the training command</td><td>Official</td></tr>
+<tr><td>Training hangs at the start with no error</td><td>Same video-reader problem, silently</td><td>Same fixes as the row above</td><td>Official</td></tr>
+<tr><td>macOS: recording quits with <code>zsh: trace trap</code></td><td>A rare bug in a video encoder on Apple Silicon</td><td>Run the record command again with <code>--resume=true</code></td><td>Community (open issue)</td></tr>
+</table></div>
+
+<h2>Training</h2>
+<div class="tablewrap"><table>
+<tr><th>Symptom</th><th>Cause</th><th>Fix</th><th>Source</th></tr>
+<tr><td><code>Device 'cuda' is not available. Switching to 'cpu'.</code> on a PC that has an NVIDIA card</td><td>The default PyTorch download on Windows has no GPU support</td><td>Install the CUDA build of PyTorch (chapter 4, step 4), then reinstall LeRobot</td><td>Official (known docs gap)</td></tr>
+<tr><td><code>CUDA out of memory</code></td><td>The batch does not fit in the GPU's memory</td><td>Add <code>--batch_size=4</code>; make sure you recorded at 640×480</td><td>Official</td></tr>
+<tr><td>Training is unbearably slow</td><td>It is running on the processor, not a GPU</td><td>Train in the cloud (<a href="train.html">chapter 12</a>, route B)</td><td>Official</td></tr>
+<tr><td>Training would take many hours on a small dataset</td><td>The default is 100,000 steps</td><td>Set <code>--steps</code> to about 5–10 epochs' worth (chapter 12)</td><td>Official</td></tr>
+</table></div>
+
+<h2>Running the policy</h2>
+<p>For behaviour problems (misses, drifts, hesitates), use the diagnosis table in <a href="evaluate.html">chapter 13</a>. Technical errors:</p>
+<div class="tablewrap"><table>
+<tr><th>Symptom</th><th>Cause</th><th>Fix</th><th>Source</th></tr>
+<tr><td>Windows: <code>Repo id must use alphanumeric chars …</code> with a backslash in the name</td><td>A known Windows problem with Hub names</td><td>Use a local folder for <code>--policy.path</code> (chapter 13)</td><td>Community (open issue)</td></tr>
+<tr><td>Error about mismatched or missing features, or the robot outputs nonsense</td><td>Camera names or sizes differ from the dataset</td><td>Paste the exact <code>--robot.cameras</code> text used when recording</td><td>Official</td></tr>
+<tr><td><code>lerobot-rollout</code> is not recognised</td><td>An old LeRobot version (before 0.6)</td><td>Update: <code>pip install -U "lerobot[core_scripts,feetech,training]"</code></td><td>Official</td></tr>
+<tr><td>Robot shakes while running the policy</td><td>Too few or jerky demonstrations, or the computer is too slow</td><td>Record smoother demos; run on a computer with a GPU</td><td>Official (maintainer reply)</td></tr>
+</table></div>
+
+<h2>Old tutorials that no longer match</h2>
+<p>LeRobot changes quickly. If a video or blog shows something different from this course, it is probably written for an older version.</p>
+<div class="tablewrap"><table>
+<tr><th>Old tutorials say</th><th>Current (LeRobot 0.7)</th></tr>
+<tr><td><code>huggingface-cli login</code></td><td><code>hf auth login</code></td></tr>
+<tr><td><code>lerobot-record … --policy.path=…</code> to run a policy</td><td><code>lerobot-rollout --strategy.type=base …</code></td></tr>
+<tr><td><code>--wandb.enable=true</code></td><td><code>--trackio.enable=true</code></td></tr>
+<tr><td><code>python -m lerobot.scripts.control_robot …</code></td><td>Separate commands: <code>lerobot-teleoperate</code>, <code>lerobot-record</code>, …</td></tr>
+<tr><td>Dataset name is exactly what you typed</td><td>A date-and-time ending is added unless you pass <code>--dataset.no_stamp=true</code></td></tr>
+</table></div>
+
+<h2>Still stuck?</h2>
+<ol>
+<li>Copy the <em>last few lines</em> of the error message. The final line usually names the real problem.</li>
+<li>Search for it in the <a href="https://github.com/huggingface/lerobot/issues">LeRobot issues on GitHub</a>. Someone has very often met it before.</li>
+<li>Ask on the <a href="https://discord.com/invite/s3KuuzsPFb">LeRobot Discord</a>. Include your operating system, the output of <code>lerobot-info</code>, the exact command and the full error. Never include your access token.</li>
+</ol>
+
+</div></main>
+<script src="assets/glossary.js"></script>
+<script src="assets/site.js"></script>
+</body>
+</html>

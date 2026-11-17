@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Let the robot act · SO-101 from zero</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body data-page="evaluate">
+<main><div class="col">
+
+<p class="kicker">Chapter 13 · Hands-on</p>
+<h1>Let the robot act</h1>
+<p class="lede">The leader arm goes back in the box. The policy takes its place in the control loop. Then you become a scientist: measure how well it works, find out why it fails, and improve it.</p>
+<div class="meta"><span>1 hour, then as long as you like</span><span>You need: trained policy, follower arm, the same cameras in the same places</span></div>
+
+<h2>What changes in the loop</h2>
+<figure class="figure">
+<svg viewBox="0 0 680 200" width="680" role="img" aria-label="Teleoperation loop compared with policy loop">
+  <g font-family="Inter, sans-serif" font-size="12.5" text-anchor="middle">
+    <text x="20" y="22" text-anchor="start" font-weight="700" fill="var(--muted)" font-size="11" letter-spacing="1">TELEOPERATION</text>
+    <rect x="20" y="34" width="150" height="46" rx="8" fill="var(--bench)"/><text x="95" y="62" fill="var(--ink)">your eyes</text>
+    <rect x="215" y="34" width="150" height="46" rx="8" fill="var(--leader-soft)"/><text x="290" y="55" fill="var(--ink)" font-weight="600">you + leader arm</text><text x="290" y="71" fill="var(--muted)">decide</text>
+    <rect x="410" y="34" width="150" height="46" rx="8" fill="var(--follower-soft)"/><text x="485" y="62" fill="var(--ink)" font-weight="600">follower moves</text>
+    <text x="20" y="122" text-anchor="start" font-weight="700" fill="var(--muted)" font-size="11" letter-spacing="1">RUNNING A POLICY</text>
+    <rect x="20" y="134" width="150" height="46" rx="8" fill="var(--bench)"/><text x="95" y="155" fill="var(--ink)">cameras +</text><text x="95" y="171" fill="var(--ink)">joint sensors</text>
+    <rect x="215" y="134" width="150" height="46" rx="8" fill="var(--ink)"/><text x="290" y="155" fill="var(--bg)" font-weight="600">trained policy</text><text x="290" y="171" fill="var(--bg)">decides</text>
+    <rect x="410" y="134" width="150" height="46" rx="8" fill="var(--follower-soft)"/><text x="485" y="162" fill="var(--ink)" font-weight="600">follower moves</text>
+    <g stroke="var(--muted)" stroke-width="2" fill="none">
+      <path d="M172 57h38M367 57h38M172 157h38M367 157h38"/>
+      <path d="M562 57h60v-45H8v45h8M562 157h60v-45H8v45h8" stroke-dasharray="5 5"/>
+    </g>
+    <g fill="var(--muted)"><path d="M213 57l-8-5v10zM408 57l-8-5v10zM213 157l-8-5v10zM408 157l-8-5v10zM18 57l-8-5v10zM18 157l-8-5v10z"/></g>
+  </g>
+</svg>
+<figcaption>Same loop, same follower, same 30 times per second. Only the decision-maker in the middle is swapped.</figcaption>
+</figure>
+
+<h2>Before you press Enter</h2>
+<p>The policy learned in one specific world. Rebuild that world exactly.</p>
+<ul class="checks">
+<li><label><input type="checkbox"><span>Cameras are in the same positions and at the same angles as during recording</span></label></li>
+<li><label><input type="checkbox"><span>Lighting is the same (same lamps, blinds in the same state)</span></label></li>
+<li><label><input type="checkbox"><span>The follower is clamped in the same spot; the container is on its tape marks</span></label></li>
+<li><label><input type="checkbox"><span>The table is as clear as it was; same object</span></label></li>
+<li><label><input type="checkbox"><span>I have my exact <code>--robot.cameras</code> text and <code>--robot.id</code> from recording</span></label></li>
+<li><label><input type="checkbox"><span>One hand is near the keyboard, ready to press <kbd>Ctrl</kbd>+<kbd>C</kbd></span></label></li>
+</ul>
+
+<h2>Run the policy</h2>
+<div class="tabs" data-group="os">
+<section data-label="Windows"><pre><code>lerobot-rollout --strategy.type=base --policy.path=YOUR_NAME/act_so101_pick_place --robot.type=so101_follower --robot.port=COM5 --robot.id=my_follower_arm --robot.cameras="{ top: {type: opencv, index_or_path: 1, width: 640, height: 480, fps: 30}, wrist: {type: opencv, index_or_path: 0, width: 640, height: 480, fps: 30} }" --task="Pick up the red brick and put it in the box" --duration=60 --display_data=true</code></pre></section>
+<section data-label="macOS / Linux"><pre><code>lerobot-rollout \
+  --strategy.type=base \
+  --policy.path=YOUR_NAME/act_so101_pick_place \
+  --robot.type=so101_follower \
+  --robot.port=/dev/ttyACM0 \
+  --robot.id=my_follower_arm \
+  --robot.cameras="{ top: {type: opencv, index_or_path: 1, width: 640, height: 480, fps: 30}, wrist: {type: opencv, index_or_path: 0, width: 640, height: 480, fps: 30} }" \
+  --task="Pick up the red brick and put it in the box" \
+  --duration=60 \
+  --display_data=true</code></pre></section>
+</div>
+<div class="dissect"><div class="line">
+<span class="part" data-info="Runs a trained policy on the real robot. (In LeRobot versions before 0.6 this was done with lerobot-record and a policy option, which is what older tutorials show.)">lerobot-rollout</span>
+<span class="part" data-info="'base' means: just run the policy, record nothing. Other strategies can record what the robot does for later review.">--strategy.type=base</span>
+<span class="part" data-info="Which policy to load: its name on the Hub, or a folder on this computer that contains a checkpoint's pretrained_model.">--policy.path=…</span>
+<span class="part" data-info="The follower arm, with the SAME id as during calibration and recording so that the same calibration file is used.">--robot… --robot.id=my_follower_arm</span>
+<span class="part" data-info="The SAME camera names, sizes and frame rate as in the dataset. The policy expects inputs called observation.images.top and observation.images.wrist of exactly this size.">--robot.cameras="…"</span>
+<span class="part" data-info="The task sentence. ACT does not read it, so it is optional here, but language-driven policies need it to match the dataset.">--task="…"</span>
+<span class="part" data-info="Stop automatically after this many seconds. Without it the policy runs until you press Ctrl+C.">--duration=60</span>
+<span class="part" data-info="Show the viewer, so you can see exactly what the policy sees.">--display_data=true</span>
+</div></div>
+<p>Notice there are no <code>--teleop</code> options. The leader is not part of this.</p>
+
+<details class="more"><summary>Windows: if loading the policy by its Hub name fails</summary><div>
+<p>A known problem on Windows can turn the <code>/</code> in the name into a <code>\</code> and produce an error mentioning "Repo id must use alphanumeric chars". The workaround is to use a folder on your computer.</p>
+<p>If you trained on this computer, the folder already exists:</p>
+<pre><code>--policy.path=outputs/train/act_so101_pick_place/checkpoints/last/pretrained_model</code></pre>
+<p>If you trained in the cloud, download the policy first, then point to the folder:</p>
+<pre><code>hf download YOUR_NAME/act_so101_pick_place --local-dir my_policy</code></pre>
+<pre><code>--policy.path=my_policy</code></pre>
+</div></details>
+
+<div class="box idea"><span class="tag">Watch what happens</span>
+<p>Place the object on one of your five marks and start. The first time the arm reaches out on its own and closes on the object is a moment worth filming. It may also miss, hesitate, or grab air. All of those are information.</p></div>
+
+<h2>Measure it properly</h2>
+<p>"It sort of works" is not a result. LeRobot has no automatic success detector for real robots, so you count by hand, the way research papers do.</p>
+<ol>
+<li><strong>Define success before you start.</strong> For example: "the brick is inside the box within 30 seconds, without human help".</li>
+<li><strong>Run 10 trials at trained positions</strong> (2 at each of your 5 marks). Write down success or failure for each.</li>
+<li><strong>Run 10 trials at new positions</strong>, between and around the marks.</li>
+<li>Report two numbers: success rate on <em>seen</em> positions and on <em>unseen</em> positions.</li>
+</ol>
+<div class="tablewrap"><table>
+<tr><th>Trial</th><th>Position</th><th>Result</th><th>What happened</th></tr>
+<tr><td class="num">1</td><td>Mark A</td><td>Success</td><td></td></tr>
+<tr><td class="num">2</td><td>Mark A</td><td>Fail</td><td>Gripper closed 1 cm too early</td></tr>
+<tr><td class="num">3</td><td>Mark B</td><td>Success</td><td></td></tr>
+<tr><td class="num">…</td><td></td><td></td><td></td></tr>
+</table></div>
+<div class="box why"><span class="tag">Why two numbers, and why ten trials?</span>
+<p>The gap between seen and unseen positions measures <dfn data-g="generalisation">generalisation</dfn>: did the policy learn to <em>look</em>, or did it memorise five motions? And ten trials because one success proves little: a policy that works 30% of the time will often succeed on the first try by luck. Even ten trials is a rough measurement; 7 out of 10 and 5 out of 10 are not reliably different.</p></div>
+<p>For reference, people training ACT on the SO-101 commonly report something like 40–60% on their first serious attempt, rising substantially once they fix their data. The team behind SmolVLA measured ACT at 70% on seen and 40% on unseen positions for a similar pick-and-place task. A first result in that region is normal, not a failure.</p>
+
+<h2>Diagnose: what the failure tells you</h2>
+<div class="tablewrap"><table>
+<tr><th>What the robot does</th><th>Most likely cause</th><th>The idea behind it</th><th>Fix</th></tr>
+<tr><td>Makes the same motion wherever the object is</td><td>It is ignoring the camera: too little position variety in the data</td><td>Overfitting (ch. 9)</td><td>Record more positions</td></tr>
+<tr><td>Works at trained marks, fails between them</td><td>Gaps in coverage</td><td>Generalisation (ch. 9)</td><td>Add episodes at in-between positions</td></tr>
+<tr><td>Starts well, then drifts off and gets "lost"</td><td>It reached a situation not in the demos</td><td>Compounding error (ch. 10)</td><td>More varied demos, including small corrections</td></tr>
+<tr><td>Hesitates or wobbles between two approaches</td><td>Demos used different strategies</td><td>Averaging trap (ch. 10)</td><td>Re-record with one consistent grasp</td></tr>
+<tr><td>Reaches consistently to one side of the object</td><td>Camera moved, or arm recalibrated since recording</td><td>The policy's world shifted (ch. 7, 8)</td><td>Restore the setup, or re-record</td></tr>
+<tr><td>Fine in the morning, bad in the afternoon</td><td>Lighting changed</td><td>New pixels = unseen situation</td><td>Control the light; record under both conditions</td></tr>
+<tr><td>Jerky, stop-and-go movement</td><td>The computer cannot compute decisions fast enough</td><td>Control frequency (ch. 2)</td><td>Use a computer with a GPU; close other programs; turn off <code>--display_data</code></td></tr>
+<tr><td>Does not move at all, or error about missing or mismatched features</td><td>Camera names or sizes differ from the dataset</td><td>The policy's inputs are fixed at training</td><td>Use the identical <code>--robot.cameras</code> text</td></tr>
+</table></div>
+
+<div class="box analogy"><span class="tag">A real example</span>
+<p>One builder ran the same trained ACT policy on two computers. On a laptop that managed only about 15 decisions per second it succeeded 4 times out of 10. On a machine with a GPU running at the full 30 per second it succeeded 9 out of 10. Nothing about the policy changed, only how fast the loop ran.</p></div>
+
+<h2>The improvement loop</h2>
+<p>This is the dashed arrow from <a href="big-picture.html">chapter 1</a>, and it is how real robot-learning work is done.</p>
+<ol>
+<li><strong>Observe</strong> a failure pattern (not a single failure: a pattern).</li>
+<li><strong>Form a hypothesis</strong> using the table above. "It fails on the left because only 5 of my episodes were on the left."</li>
+<li><strong>Change one thing.</strong> Record 20 more episodes on the left and add them to the dataset.</li>
+<li><strong>Retrain and measure again</strong> with the same 20 trials.</li>
+<li><strong>Compare the numbers.</strong> Did the hypothesis hold?</li>
+</ol>
+<p>Change one thing at a time. If you move the camera, change the object <em>and</em> add data, you will not know which change helped.</p>
+
+<details class="more"><summary>Record the robot's attempts for later review</summary><div>
+<p>The <code>episodic</code> strategy runs the policy and saves each attempt as a dataset, which you can then watch in the online viewer to study failures frame by frame. The dataset name must begin with <code>rollout_</code>.</p>
+<pre><code>lerobot-rollout --strategy.type=episodic --policy.path=YOUR_NAME/act_so101_pick_place --robot.type=so101_follower --robot.port=COM5 --robot.id=my_follower_arm --robot.cameras="{ top: {type: opencv, index_or_path: 1, width: 640, height: 480, fps: 30}, wrist: {type: opencv, index_or_path: 0, width: 640, height: 480, fps: 30} }" --dataset.repo_id=YOUR_NAME/rollout_pick_place --dataset.num_episodes=10 --dataset.episode_time_s=30 --dataset.reset_time_s=10 --dataset.single_task="Pick up the red brick and put it in the box"</code></pre>
+<p class="small">Shown on one line with a Windows port; on macOS or Linux change the port. The same arrow keys as in recording end or redo an attempt.</p>
+</div></details>
+
+<h2>Ideas for your next experiments</h2>
+<ul>
+<li><strong>How little data is enough?</strong> Train on only 10, 25 and 50 of your episodes and compare success rates. You will measure for yourself why the docs say 25 was "not enough".</li>
+<li><strong>Break it on purpose.</strong> Move the camera 5 cm, or switch off a lamp, and measure the drop. Then you know how fragile the policy is and to what.</li>
+<li><strong>Add a distractor.</strong> Put a second, different object on the table. Does the policy still find the right one?</li>
+<li><strong>A second task.</strong> Stacking two bricks, pushing an object to a mark, or opening a small drawer.</li>
+</ul>
+
+<div class="quiz">
+<p class="q">Your policy scores 9/10 at the five trained positions and 2/10 at new positions. What does that tell you?</p>
+<div class="opts">
+<button data-fb="More steps would polish what it already does. The weakness is in what the data covers.">It needs more training steps.</button>
+<button data-ok data-fb="A large gap between seen and unseen means it learned those five situations specifically. More positions in the dataset force it to rely on what the camera shows.">It has mostly memorised the trained positions; the dataset needs more position variety.</button>
+<button data-fb="A broken arm would fail everywhere, including at trained positions.">The arm is broken.</button>
+</div></div>
+
+<div class="quiz">
+<p class="q">The policy reaches 2 cm to the right of the object every single time, at every position. Most likely cause?</p>
+<div class="opts">
+<button data-fb="Random noise would scatter the misses in all directions. A consistent offset points to a consistent shift.">Random noise in the policy.</button>
+<button data-ok data-fb="A constant offset everywhere means the relationship between camera, arm and table changed since recording: a bumped camera, a moved base, or a new calibration.">Something in the setup shifted since recording: camera, base or calibration.</button>
+<button data-fb="Too few episodes would usually show as failures in particular regions, not a uniform offset.">Not enough episodes.</button>
+</div></div>
+
+</div></main>
+<script src="assets/glossary.js"></script>
+<script src="assets/site.js"></script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>

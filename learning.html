@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>How machines learn · SO-101 from zero</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body data-page="learning">
+<main><div class="col">
+
+<p class="kicker">Chapter 9 · Ideas</p>
+<h1>How machines learn</h1>
+<p class="lede">"Training a neural network" sounds mysterious. It is one simple idea repeated millions of times: guess, measure how wrong the guess was, adjust slightly. This chapter builds that idea from nothing.</p>
+<div class="meta"><span>25 minutes</span><span>2 interactive demos</span><span>No robot needed</span></div>
+
+<h2>Learning means finding good numbers</h2>
+<p>Suppose you want a rule that predicts one number from another, for example how far a joint moves from how long the motor runs. You collect some examples and plot them. The simplest possible "model" is a straight line, <code>y = w · x + b</code>. It has two adjustable numbers, <code>w</code> (the slope) and <code>b</code> (the height). Those adjustable numbers are called <dfn data-g="parameters">parameters</dfn>.</p>
+<p>"Learning" means finding the values of <code>w</code> and <code>b</code> that make the line fit the examples. A computer does it like this:</p>
+<ol>
+<li><strong>Start with random parameters.</strong> The line is in a silly place.</li>
+<li><strong>Measure how wrong it is.</strong> For every example, take the gap between the line's prediction and the true answer; combine the gaps into a single number called the <dfn data-g="loss">loss</dfn>. Big loss = bad fit.</li>
+<li><strong>Work out which way to nudge each parameter</strong> to make the loss a little smaller. That direction is called the <em>gradient</em>.</li>
+<li><strong>Nudge, and repeat.</strong> Each repetition is one training <dfn data-g="step">step</dfn>.</li>
+</ol>
+<p>This procedure is <strong>gradient descent</strong>, and it is how every model in this course is trained, from this two-parameter line up to models with billions of parameters.</p>
+
+<div class="widget" data-widget="gradient">
+<div class="wtitle"><span>Try it: train a model with two parameters</span></div>
+<p class="caption">Press "One step" a few times and watch the line swing toward the dots while the loss curve drops. Then reset, set the learning rate above 1.8 and train again: the steps are so big that the line jumps past the best position and the loss grows. Too small, and learning takes forever. Choosing this step size is a large part of the craft of training.</p>
+</div>
+
+<div class="box analogy"><span class="tag">Analogy</span>
+<p>You are on a foggy hillside and want to reach the valley. You cannot see far, but you can feel which way the ground slopes under your feet. So you take a step downhill, feel again, step again. The height is the loss, your position is the parameters, and the length of your stride is the learning rate. You will reach <em>a</em> valley, though not always the deepest one.</p></div>
+
+<h2>From a line to a neural network</h2>
+<p>A straight line cannot describe "what a camera image of a red cube looks like". For that you need a far more flexible function. A <dfn data-g="neural-network">neural network</dfn> is exactly that: a very large formula made of simple pieces (multiply, add, and a small bend) stacked in layers, with millions of parameters instead of two.</p>
+<figure class="figure">
+<svg viewBox="0 0 640 220" width="640" role="img" aria-label="A neural network: inputs pass through layers of connected units to outputs">
+  <g stroke="var(--line)" stroke-width="1.2">
+    <g id="e1"></g>
+    <path d="M110 50L270 35M110 50L270 85M110 50L270 135M110 50L270 185M110 110L270 35M110 110L270 85M110 110L270 135M110 110L270 185M110 170L270 35M110 170L270 85M110 170L270 135M110 170L270 185"/>
+    <path d="M270 35L410 35M270 35L410 85M270 35L410 135M270 35L410 185M270 85L410 35M270 85L410 85M270 85L410 135M270 85L410 185M270 135L410 35M270 135L410 85M270 135L410 135M270 135L410 185M270 185L410 35M270 185L410 85M270 185L410 135M270 185L410 185"/>
+    <path d="M410 35L540 80M410 85L540 80M410 135L540 80M410 185L540 80M410 35L540 140M410 85L540 140M410 135L540 140M410 185L540 140"/>
+  </g>
+  <g fill="var(--follower)"><circle cx="110" cy="50" r="13"/><circle cx="110" cy="110" r="13"/><circle cx="110" cy="170" r="13"/></g>
+  <g fill="var(--ink)"><circle cx="270" cy="35" r="13"/><circle cx="270" cy="85" r="13"/><circle cx="270" cy="135" r="13"/><circle cx="270" cy="185" r="13"/><circle cx="410" cy="35" r="13"/><circle cx="410" cy="85" r="13"/><circle cx="410" cy="135" r="13"/><circle cx="410" cy="185" r="13"/></g>
+  <g fill="var(--leader)"><circle cx="540" cy="80" r="13"/><circle cx="540" cy="140" r="13"/></g>
+  <g font-family="Inter, sans-serif" font-size="12" fill="var(--muted)" text-anchor="middle">
+    <text x="110" y="210">inputs</text><text x="340" y="210">hidden layers</text><text x="540" y="210">outputs</text>
+    <text x="50" y="54">pixels,</text><text x="50" y="114">joint</text><text x="50" y="130">angles</text>
+    <text x="600" y="84">joint</text><text x="600" y="100">targets</text>
+  </g>
+</svg>
+<figcaption>Every line is one parameter: a number that says how strongly one unit influences the next. Training adjusts all of them. This toy has 36; the policy you will train has about 80 million.</figcaption>
+</figure>
+<p>Nobody decides what each parameter should be. They all start random and are nudged by gradient descent, a tiny amount per step, exactly like <code>w</code> and <code>b</code> above. After enough steps the network as a whole computes something useful, even though no single parameter means anything on its own.</p>
+
+<div class="box idea"><span class="tag">Two kinds of network you will hear about</span>
+<p><strong>Convolutional network (CNN, e.g. "ResNet"):</strong> made for images. It slides small pattern detectors across the picture, finding edges first, then shapes, then object parts. Your policy uses one to turn each camera frame into a compact description.</p>
+<p><strong>Transformer:</strong> takes a list of items (image pieces, joint readings, words) and, in every layer, lets each item pull in information from the others that are relevant to it. That mechanism is called <em>attention</em>. Transformers power both chatbots and modern robot policies.</p></div>
+
+<h2>Words you will see in the training log</h2>
+<div class="tablewrap"><table>
+<tr><th>Word</th><th>Meaning</th><th>With the line example</th></tr>
+<tr><td><dfn data-g="batch">Batch</dfn></td><td>The handful of examples looked at for one step. Using a few at a time is faster than using all of them.</td><td>8 of the dots</td></tr>
+<tr><td><dfn data-g="step">Step</dfn></td><td>One nudge of all the parameters, based on one batch.</td><td>One press of "One step"</td></tr>
+<tr><td><dfn data-g="epoch">Epoch</dfn></td><td>One full pass through the whole dataset.</td><td>Every dot used once</td></tr>
+<tr><td><dfn data-g="loss">Loss</dfn></td><td>How wrong the model currently is. Should fall over time.</td><td>The red curve</td></tr>
+<tr><td>Learning rate</td><td>The size of each nudge.</td><td>The slider</td></tr>
+<tr><td><dfn data-g="checkpoint">Checkpoint</dfn></td><td>A saved copy of all the parameters at some step, like a save point in a game.</td><td>Writing down <code>w</code> and <code>b</code></td></tr>
+</table></div>
+<p>A worked example with real numbers from your project: 50 episodes of 30 seconds at 30 frames per second is 50 × 30 × 30 = 45,000 frames. With a batch of 8, one epoch is 45,000 ÷ 8 ≈ 5,600 steps. LeRobot's docs say imitation learning "typically converges within 5–10 epochs", so roughly 28,000 to 56,000 steps.</p>
+
+<h2>The real goal: working on things it has not seen</h2>
+<p>A model that perfectly reproduces its training examples is not necessarily good. What you want is <dfn data-g="generalisation">generalisation</dfn>: doing well on <em>new</em> situations. The opposite failure is <dfn data-g="overfitting">overfitting</dfn>: memorising the examples, including their accidents and noise, without grasping the pattern.</p>
+
+<div class="widget" data-widget="overfit">
+<div class="wtitle"><span>Try it: memorising versus understanding</span></div>
+<p class="caption">The 8 filled dots are training examples; the hollow dots are new examples the model never saw. Raise the flexibility. At 7 the curve passes exactly through every training dot (training error is zero), yet it swings wildly between them and is badly wrong on the new dots. Somewhere in the middle is best. Press "New random data" to check that the pattern holds.</p>
+</div>
+
+<div class="box analogy"><span class="tag">Analogy</span>
+<p>Two students prepare for a maths exam from the same ten past papers. One memorises the ten answer sheets. The other learns the methods. On the ten old papers the memoriser scores 100%. On a new paper, only the second student passes. Training loss is the score on the old papers.</p></div>
+
+<p>This is the single most useful idea for the rest of the course. Your robot will be trained on 50 demonstrations and then must act in a world that is never identical to any of them. Three practical consequences:</p>
+<ul>
+<li><strong>A low loss does not prove the robot works.</strong> The only real test is running it.</li>
+<li><strong>Variety in the data fights overfitting.</strong> If the cube was always in the same spot, the model can "succeed" by memorising one motion and ignoring the camera. Move the cube around and it is forced to look.</li>
+<li><strong>More training is not always better.</strong> Past a certain point the model polishes its memory of the training set at the cost of everything else.</li>
+</ul>
+
+<h2>Training versus inference</h2>
+<div class="tablewrap"><table>
+<tr><th></th><th>Training</th><th><dfn data-g="inference">Inference</dfn></th></tr>
+<tr><td>What happens</td><td>Parameters are adjusted, millions of times</td><td>Parameters are fixed; the network is just used</td></tr>
+<tr><td>When</td><td>Once, before use (chapter 12)</td><td>30 times a second while the robot runs (chapter 13)</td></tr>
+<tr><td>Cost</td><td>Heavy: needs a GPU, minutes to hours</td><td>Light: a hundredth of a second per decision for a small model</td></tr>
+<tr><td>Analogy</td><td>Studying for the exam</td><td>Sitting the exam</td></tr>
+</table></div>
+
+<div class="quiz">
+<p class="q">During training the loss goes down steadily to nearly zero. What can you conclude?</p>
+<div class="opts">
+<button data-fb="The loss only measures the training examples. It says nothing certain about new situations.">The robot will perform the task perfectly.</button>
+<button data-ok data-fb="The model fits its training data. Whether that came from understanding or memorising can only be seen by testing on new situations, which for a robot means running it.">The model reproduces its training examples well; whether it works in new situations is still unknown.</button>
+<button data-fb="A falling loss is what training is supposed to produce.">Something is broken, because loss should rise.</button>
+</div></div>
+
+<div class="quiz">
+<p class="q">Your dataset has 30,000 frames and the batch size is 8. Roughly how many steps is one epoch?</p>
+<div class="opts">
+<button data-fb="That is the number of frames, not steps. Each step uses 8 frames.">30,000</button>
+<button data-ok data-fb="30,000 ÷ 8 = 3,750 steps to see every frame once.">About 3,750</button>
+<button data-fb="That would be multiplying. One epoch needs frames ÷ batch size steps.">240,000</button>
+</div></div>
+
+</div></main>
+<script src="assets/glossary.js"></script>
+<script src="assets/site.js"></script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>

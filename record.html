@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Record a dataset · SO-101 from zero</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body data-page="record">
+<main><div class="col">
+
+<p class="kicker">Chapter 11 · Hands-on</p>
+<h1>Record a dataset</h1>
+<p class="lede">This is the most important hands-on chapter. The policy can only ever be as good as the demonstrations you give it. Researchers have a blunt saying for it: garbage in, garbage out.</p>
+<div class="meta"><span>1.5–2 hours</span><span>You need: working teleoperation with cameras, an object and a container</span></div>
+
+<h2>What exactly gets recorded</h2>
+<p>An <dfn data-g="episode">episode</dfn> is one complete demonstration, from start pose to finished task. While you teleoperate, LeRobot saves one row of data 30 times per second. Explore a (simulated) episode:</p>
+
+<div class="widget" data-widget="episode">
+<div class="wtitle"><span>Try it: scrub through one episode</span><span>5 seconds = 150 frames</span></div>
+<p class="caption">Drag the frame slider and watch the numbers. <code>action</code> is where the leader is: the command. <code>observation.state</code> is where the follower actually is. Notice the follower trails slightly behind, and the numbers differ most when the arm moves fast. The policy will learn: "when the picture and state look like <em>this</em>, the command was <em>that</em>".</p>
+</div>
+
+<div class="box why"><span class="tag">Why is the action the leader's position, not the follower's?</span>
+<p>Because the policy's job is to produce <em>commands</em>. The follower's measured position is the result of a command a moment earlier, after lag and gravity. If the policy learned to output "where the follower was", it would be commanding the arm to stay where it already is, and the arm would barely move.</p></div>
+
+<p>On disk, a LeRobot dataset (format version 3.0) is a folder:</p>
+<div class="tablewrap"><table>
+<tr><th>Part</th><th>Contains</th><th>File type</th></tr>
+<tr><td><code>data/</code></td><td>The rows of numbers: joint states, actions, timestamps</td><td>Parquet (a compact table format)</td></tr>
+<tr><td><code>videos/</code></td><td>The camera footage, one video stream per camera</td><td>MP4</td></tr>
+<tr><td><code>meta/</code></td><td>Descriptions: frame rate, task sentence, episode lengths, and statistics such as the average and range of every joint</td><td>JSON and Parquet</td></tr>
+</table></div>
+
+<h2>Design your task before recording</h2>
+<p>The official starting task is: pick up an object from different places on the table and put it in a container. Keep it that simple for your first dataset.</p>
+<ul class="checks">
+<li><label><input type="checkbox"><span><strong>Object:</strong> small, light, easy to grip and clearly visible against the table (a bright Lego brick or a small cube). Avoid shiny, transparent or round rolling objects</span></label></li>
+<li><label><input type="checkbox"><span><strong>Container:</strong> a low box or bowl, fixed in one place with tape</span></label></li>
+<li><label><input type="checkbox"><span><strong>Background:</strong> plain and uncluttered. Remove everything that is not part of the task</span></label></li>
+<li><label><input type="checkbox"><span><strong>Five object positions:</strong> mark them lightly with small pieces of tape, all comfortably within reach and in camera view</span></label></li>
+<li><label><input type="checkbox"><span><strong>Lighting:</strong> steady lamp light. Close the blinds if sunlight moves across the table</span></label></li>
+<li><label><input type="checkbox"><span><strong>Camera test passed:</strong> I can do the task looking only at the camera view (<a href="teleop.html">chapter 8</a>)</span></label></li>
+<li><label><input type="checkbox"><span><strong>Practised:</strong> I can do the task smoothly ten times in a row by teleoperation</span></label></li>
+</ul>
+
+<h3>The plan: 50 episodes, 10 at each of 5 positions</h3>
+<p>That is the official suggestion: "at least 50 episodes, with 10 episodes per location". The team behind it reported that the same setup with only 25 episodes "was not enough".</p>
+<div class="tablewrap"><table>
+<tr><th>Keep the same in every episode</th><th>Vary between episodes</th></tr>
+<tr><td>Camera positions and lighting</td><td>Object position (your 5 marks)</td></tr>
+<tr><td>How you grasp (same side, same approach)</td><td>Object rotation, slightly</td></tr>
+<tr><td>Where the container is</td><td>Small differences in the arm's starting pose</td></tr>
+<tr><td>Start and end with the arm in a rest pose</td><td></td></tr>
+</table></div>
+<p>The reasons are in <a href="imitation.html">chapter 10</a>: variety in the situation forces the policy to use its camera and widens what it can handle; consistency in your strategy avoids the averaging trap. The docs add a warning: "Avoid adding too much variation too quickly, as it may hinder your results."</p>
+
+<h2>Record</h2>
+<ol class="steps">
+<li><div>
+<h3>Build your command</h3>
+<p>It is the teleoperate command from chapter 8 with a new program name and a few <code>--dataset</code> options. Use <em>your</em> ports, <em>your</em> exact camera text, and your Hugging Face username in place of <code>YOUR_NAME</code>.</p>
+<div class="tabs" data-group="os">
+<section data-label="Windows"><pre><code>lerobot-record --robot.type=so101_follower --robot.port=COM5 --robot.id=my_follower_arm --robot.cameras="{ top: {type: opencv, index_or_path: 1, width: 640, height: 480, fps: 30}, wrist: {type: opencv, index_or_path: 0, width: 640, height: 480, fps: 30} }" --teleop.type=so101_leader --teleop.port=COM6 --teleop.id=my_leader_arm --dataset.repo_id=YOUR_NAME/so101_pick_place --dataset.no_stamp=true --dataset.num_episodes=50 --dataset.single_task="Pick up the red brick and put it in the box" --dataset.episode_time_s=30 --dataset.reset_time_s=10 --dataset.streaming_encoding=true --display_data=true</code></pre></section>
+<section data-label="macOS / Linux"><pre><code>lerobot-record \
+    --robot.type=so101_follower \
+    --robot.port=/dev/ttyACM0 \
+    --robot.id=my_follower_arm \
+    --robot.cameras="{ top: {type: opencv, index_or_path: 1, width: 640, height: 480, fps: 30}, wrist: {type: opencv, index_or_path: 0, width: 640, height: 480, fps: 30} }" \
+    --teleop.type=so101_leader \
+    --teleop.port=/dev/ttyACM1 \
+    --teleop.id=my_leader_arm \
+    --dataset.repo_id=YOUR_NAME/so101_pick_place \
+    --dataset.no_stamp=true \
+    --dataset.num_episodes=50 \
+    --dataset.single_task="Pick up the red brick and put it in the box" \
+    --dataset.episode_time_s=30 \
+    --dataset.reset_time_s=10 \
+    --dataset.streaming_encoding=true \
+    --display_data=true</code></pre></section>
+</div>
+<div class="dissect"><div class="line">
+<span class="part" data-info="Teleoperation plus recording. Everything the cameras see and every joint value is saved 30 times per second.">lerobot-record</span>
+<span class="part" data-info="Exactly as in chapter 8: the follower, the leader, and the cameras. The camera names and sizes you use here are baked into the dataset.">--robot… --teleop…</span>
+<span class="part" data-info="The dataset's name: your Hugging Face username, a slash, then a name you choose. It becomes the address of the dataset on the Hub.">--dataset.repo_id=YOUR_NAME/so101_pick_place</span>
+<span class="part" data-info="By default LeRobot adds the date and time to the dataset name (for example so101_pick_place_20261117_143012) so that a second recording never overwrites the first. This option switches that off so the name is exactly what you typed. If you leave it out, look up the full name afterwards and use that everywhere.">--dataset.no_stamp=true</span>
+<span class="part" data-info="How many episodes to record in this session.">--dataset.num_episodes=50</span>
+<span class="part" data-info="One clear sentence describing the task. ACT ignores it, but language-driven models (chapter 14) depend on it, so write it properly now. Aim for a short, specific sentence, not 'task1'.">--dataset.single_task="…"</span>
+<span class="part" data-info="Maximum length of one episode in seconds (default 60). Set it a little longer than the task takes you; you can end an episode early with the right arrow key.">--dataset.episode_time_s=30</span>
+<span class="part" data-info="Pause between episodes, in seconds (default 60), for you to put the object back and move it to the next position. Nothing is recorded during this time.">--dataset.reset_time_s=10</span>
+<span class="part" data-info="Compress the camera pictures into video while recording, instead of afterwards. Saves waiting time at the end of each episode.">--dataset.streaming_encoding=true</span>
+<span class="part" data-info="Show the live viewer window with camera pictures and joint graphs.">--display_data=true</span>
+</div></div>
+</div></li>
+<li><div>
+<h3>Learn the three keys</h3>
+<div class="tablewrap"><table>
+<tr><th>Key</th><th>Effect</th><th>Use it when</th></tr>
+<tr><td><kbd>→</kbd> or <kbd>n</kbd></td><td>End this episode (or this reset pause) now and move on</td><td>You finished the task before the time ran out</td></tr>
+<tr><td><kbd>←</kbd> or <kbd>r</kbd></td><td>Throw away the current episode and record it again</td><td>You fumbled, dropped the object, or bumped the camera</td></tr>
+<tr><td><kbd>Esc</kbd> or <kbd>q</kbd></td><td>Stop the whole session, save, and upload</td><td>You need to stop early</td></tr>
+</table></div>
+<p class="small">If the keys do nothing, click on the terminal window so it has keyboard focus.</p>
+</div></li>
+<li><div>
+<h3>Do a 3-episode rehearsal first</h3>
+<p>Run the command once with <code>--dataset.num_episodes=3</code> and the name <code>YOUR_NAME/so101_test</code>. Get used to the rhythm: the terminal tells you an episode has started, you perform the task, press <kbd>→</kbd>, reset the object, repeat. Then check the result in step 5 before investing an hour.</p>
+</div></li>
+<li><div>
+<h3>Record the real 50</h3>
+<p>Run the full command. Work through your five positions, ten episodes each. Good habits:</p>
+<ul>
+<li>Start each episode with the arm in the rest pose and end with the gripper open and away from the box.</li>
+<li>Move at a calm, steady speed. Do not rush and do not freeze.</li>
+<li>If you make a real mess, press <kbd>←</kbd>. A small wobble that you correct is fine to keep.</li>
+<li>Keep hands, sleeves and the leader arm out of the camera view.</li>
+<li>Take a break halfway. Tired demonstrations are sloppy demonstrations.</li>
+</ul>
+<p>When the last episode ends, LeRobot finishes the videos and uploads the dataset to the Hub. Wait for the prompt to return.</p>
+</div></li>
+<li><div>
+<h3>Check the timing report</h3>
+<p>After each episode the terminal prints a line like this:</p>
+<pre class="out">Cadence (episode 0): 29.88 Hz vs 30 Hz target …</pre>
+<p>The first number must be close to 30. If it is well below (say 22), your computer could not keep up, usually because of the cameras.</p>
+<div class="box why"><span class="tag">Why this matters</span>
+<p>The dataset does not store real clock times. It assumes frames are exactly 1/30 of a second apart. If the real rate was 22 per second, the saved episode claims your movements were faster than they were, and the policy learns a sped-up, wrong version of the motion. Fix it before recording more: lower the camera resolution, close other programs, or use one camera.</p></div>
+</div></li>
+<li><div>
+<h3>Look at your data</h3>
+<p>Open the online viewer at <a href="https://huggingface.co/spaces/lerobot/visualize_dataset">huggingface.co/spaces/lerobot/visualize_dataset</a>, type your dataset name (<code>YOUR_NAME/so101_pick_place</code>) and browse the episodes. Sign in there if your dataset is private. You will see all cameras playing together with graphs of every joint.</p>
+<p>Watch at least ten episodes and ask:</p>
+<ul>
+<li>Is the object visible the whole time in at least one camera?</li>
+<li>Is the picture sharp and evenly lit?</li>
+<li>Does every episode show the complete task?</li>
+<li>Are any episodes clearly bad?</li>
+</ul>
+<p>You can also replay an episode on the real robot. The follower repeats your recorded commands with no leader attached:</p>
+<div class="tabs" data-group="os">
+<section data-label="Windows"><pre><code>lerobot-replay --robot.type=so101_follower --robot.port=COM5 --robot.id=my_follower_arm --dataset.repo_id=YOUR_NAME/so101_pick_place --dataset.episode=0</code></pre></section>
+<section data-label="macOS / Linux"><pre><code>lerobot-replay \
+    --robot.type=so101_follower \
+    --robot.port=/dev/ttyACM0 \
+    --robot.id=my_follower_arm \
+    --dataset.repo_id=YOUR_NAME/so101_pick_place \
+    --dataset.episode=0</code></pre></section>
+</div>
+<div class="box idea"><span class="tag">A revealing experiment</span>
+<p>Put the object where it was in episode 0 and replay episode 0: the robot picks it up. Now move the object 5 cm and replay again: the robot grabs at empty air. Replay is "blind" playback. This is precisely the difference between a recording and a policy: a policy looks at the camera and adapts.</p></div>
+</div></li>
+</ol>
+
+<h2>Fixing a dataset afterwards</h2>
+<details class="more"><summary>Delete bad episodes or add more</summary><div>
+<p><strong>Delete episodes</strong> (for example numbers 3 and 17) into a new, cleaned copy:</p>
+<pre><code>lerobot-edit-dataset --repo_id YOUR_NAME/so101_pick_place --new_repo_id YOUR_NAME/so101_pick_place_clean --operation.type delete_episodes --operation.episode_indices "[3, 17]"</code></pre>
+<p><strong>Add more episodes</strong> to an existing dataset: run your record command again with two extra options, <code>--resume=true</code> and <code>--dataset.root=</code> followed by the dataset's folder on your computer. Set <code>--dataset.num_episodes</code> to the number of <em>additional</em> episodes, not the new total.</p>
+<p><strong>Where is it on my computer?</strong> In the hidden folder <code>.cache/huggingface/lerobot/YOUR_NAME/</code> inside your user folder.</p>
+</div></details>
+
+<h2>Troubleshooting</h2>
+<div class="tablewrap"><table>
+<tr><th>Problem</th><th>Fix</th></tr>
+<tr><td>Upload fails at the end</td><td>Check <code>hf auth whoami</code>; your token must be a <em>write</em> token (<a href="setup.html">chapter 4</a>). The data is still safe on your computer</td></tr>
+<tr><td>Error that the dataset already exists</td><td>Choose a new name, or use <code>--resume=true</code> to add to it</td></tr>
+<tr><td>Cadence far below 30 Hz</td><td>Lower camera resolution, close other apps, plug cameras into separate USB sockets</td></tr>
+<tr><td>Video encoding error mentioning ffmpeg or an encoder</td><td>See <a href="troubleshooting.html">troubleshooting</a>, section "Video and ffmpeg"</td></tr>
+</table></div>
+
+<div class="quiz">
+<p class="q">The timing report says 20 Hz instead of 30 Hz for every episode. If you train on this data anyway, what goes wrong?</p>
+<div class="opts">
+<button data-fb="The number of frames is not the main problem. The timing of the motion is.">Nothing serious; there are just fewer frames.</button>
+<button data-ok data-fb="Frames are assumed to be 1/30 s apart. Recorded at 20 Hz, the saved motion appears 1.5 times faster than you really moved, and the policy learns that wrong speed.">The saved motion looks faster than it really was, so the policy learns wrong movements.</button>
+<button data-fb="Camera sharpness is unrelated to the loop rate.">The camera pictures become blurry.</button>
+</div></div>
+
+</div></main>
+<script src="assets/glossary.js"></script>
+<script src="assets/site.js"></script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>
